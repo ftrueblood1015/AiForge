@@ -114,7 +114,22 @@ public class ApiKeyAuthMiddleware
         // Store API key info in HttpContext for use in controllers
         context.Items["ApiKey"] = apiKey;
 
-        await dbContext.SaveChangesAsync();
+        // Save changes with concurrency handling - usage tracking should not fail the request
+        try
+        {
+            await dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Another request updated the same record - this is fine for usage tracking
+            // Clear the change tracker to prevent issues with subsequent operations
+            dbContext.ChangeTracker.Clear();
+        }
+        catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("duplicate", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            // Another request created the usage record first - this is fine
+            dbContext.ChangeTracker.Clear();
+        }
 
         await _next(context);
     }

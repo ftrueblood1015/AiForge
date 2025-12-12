@@ -10,7 +10,9 @@ export interface PlanningData {
 export const planningApi = {
   // Get all planning data for a ticket
   getByTicket: async (ticketId: string): Promise<PlanningData> => {
-    const response = await client.get<PlanningData>(`/api/planning/tickets/${ticketId}`);
+    const response = await client.get<PlanningData>('/api/planning/data', {
+      params: { ticketId }
+    });
     return response.data;
   },
 
