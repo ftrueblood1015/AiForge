@@ -7,7 +7,18 @@
       "Bash(dotnet build:*)",
       "Bash(cat:*)",
       "Bash(dotnet ef migrations add:*)",
-      "Bash(dotnet ef database update:*)"
+      "Bash(dotnet ef database update:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "Bash(dotnet publish:*)",
+      "Bash(claude mcp add:*)",
+      "Bash(claude mcp list:*)",
+      "mcp__aiforge__list_projects",
+      "mcp__aiforge__create_project",
+      "mcp__aiforge__create_ticket",
+      "mcp__aiforge__start_planning",
+      "mcp__aiforge__transition_ticket",
+      "Bash(npm install)"
     ]
   }
 }

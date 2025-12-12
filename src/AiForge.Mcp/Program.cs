@@ -1,2 +1,37 @@
-﻿// See https://aka.ms/new-console-template for more information
-Console.WriteLine("Hello, World!");
+using AiForge.Application;
+using AiForge.Application.Services;
+using AiForge.Infrastructure;
+using AiForge.Infrastructure.Data;
+using AiForge.Mcp.Tools;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using ModelContextProtocol.Server;
+
+var builder = Host.CreateApplicationBuilder(args);
+
+// Configure logging to stderr (stdout is used for MCP communication)
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole(options => options.LogToStandardErrorThreshold = LogLevel.Trace);
+
+// Add database context
+var connectionString = builder.Configuration["ConnectionStrings:DefaultConnection"]
+    ?? "Server=.\\SQLEXPRESS;Database=AiForge;Trusted_Connection=True;TrustServerCertificate=True;";
+
+builder.Services.AddDbContext<AiForgeDbContext>(options =>
+    options.UseSqlServer(connectionString));
+
+// Add application layer services
+builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddApplication();
+
+// Add MCP Server with tools
+builder.Services
+    .AddMcpServer()
+    .WithStdioServerTransport()
+    .WithToolsFromAssembly(typeof(TicketTools).Assembly);
+
+var app = builder.Build();
+
+await app.RunAsync();
