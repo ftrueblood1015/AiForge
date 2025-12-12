@@ -1,5 +1,5 @@
 import client from './client';
-import type { Ticket, CreateTicketRequest, UpdateTicketRequest, TransitionTicketRequest, TicketSearchParams, Comment } from '../types';
+import type { Ticket, CreateTicketRequest, UpdateTicketRequest, TransitionTicketRequest, TicketSearchParams, Comment, TicketHistory } from '../types';
 
 export const ticketsApi = {
   search: async (params: TicketSearchParams): Promise<Ticket[]> => {
@@ -47,6 +47,12 @@ export const ticketsApi = {
       content,
       isAiGenerated,
     });
+    return response.data;
+  },
+
+  // History
+  getHistory: async (ticketId: string): Promise<TicketHistory[]> => {
+    const response = await client.get<TicketHistory[]>(`/api/tickets/${ticketId}/history`);
     return response.data;
   },
 };

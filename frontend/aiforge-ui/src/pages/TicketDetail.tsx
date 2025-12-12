@@ -37,11 +37,13 @@ import {
   Description as DescriptionIcon,
   Psychology as PlanningIcon,
   Folder as HandoffIcon,
+  History as HistoryIcon,
 } from '@mui/icons-material';
 import { useTicketStore } from '../stores/ticketStore';
 import { ticketsApi } from '../api/tickets';
 import { PlanningTimeline } from '../components/planning';
 import { TicketHandoffs } from '../components/handoffs';
+import { TicketHistoryTimeline } from '../components/history';
 import type { TicketType, TicketStatus, Priority, Comment } from '../types';
 
 const typeIcons: Record<TicketType, React.ReactNode> = {
@@ -252,6 +254,7 @@ export default function TicketDetail() {
                 <Tab icon={<DescriptionIcon />} iconPosition="start" label="Details" />
                 <Tab icon={<PlanningIcon />} iconPosition="start" label="AI Context" />
                 <Tab icon={<HandoffIcon />} iconPosition="start" label="Handoffs" />
+                <Tab icon={<HistoryIcon />} iconPosition="start" label="History" />
               </Tabs>
 
               {/* Tab Panels */}
@@ -344,6 +347,10 @@ export default function TicketDetail() {
 
               <TabPanel value={activeTab} index={2}>
                 <TicketHandoffs ticketId={currentTicket.id} />
+              </TabPanel>
+
+              <TabPanel value={activeTab} index={3}>
+                <TicketHistoryTimeline ticketId={currentTicket.id} ticket={currentTicket} />
               </TabPanel>
             </CardContent>
           </Card>
