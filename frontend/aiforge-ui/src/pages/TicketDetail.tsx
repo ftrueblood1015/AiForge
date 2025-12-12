@@ -22,6 +22,8 @@ import {
   ListItemText,
   ListItemAvatar,
   Avatar,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import {
   Assignment as AssignmentIcon,
@@ -32,9 +34,14 @@ import {
   Send as SendIcon,
   SmartToy as AiIcon,
   Person as PersonIcon,
+  Description as DescriptionIcon,
+  Psychology as PlanningIcon,
+  Folder as HandoffIcon,
 } from '@mui/icons-material';
 import { useTicketStore } from '../stores/ticketStore';
 import { ticketsApi } from '../api/tickets';
+import { PlanningTimeline } from '../components/planning';
+import { TicketHandoffs } from '../components/handoffs';
 import type { TicketType, TicketStatus, Priority, Comment } from '../types';
 
 const typeIcons: Record<TicketType, React.ReactNode> = {
@@ -67,11 +74,26 @@ const priorityColors: Record<Priority, 'default' | 'info' | 'warning' | 'error'>
 
 const STATUSES: TicketStatus[] = ['ToDo', 'InProgress', 'InReview', 'Done'];
 
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel({ children, value, index }: TabPanelProps) {
+  return (
+    <div hidden={value !== index}>
+      {value === index && <Box sx={{ pt: 2 }}>{children}</Box>}
+    </div>
+  );
+}
+
 export default function TicketDetail() {
   const { key } = useParams<{ key: string }>();
   const navigate = useNavigate();
   const { currentTicket, isLoading, error, fetchTicket, updateTicketStatus } = useTicketStore();
 
+  const [activeTab, setActiveTab] = useState(0);
   const [statusMenuAnchor, setStatusMenuAnchor] = useState<null | HTMLElement>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -221,88 +243,108 @@ export default function TicketDetail() {
                 ))}
               </Menu>
 
-              <Divider sx={{ my: 2 }} />
-
-              {/* Description */}
-              <Typography variant="h6" gutterBottom>
-                Description
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{ whiteSpace: 'pre-wrap', color: currentTicket.description ? 'text.primary' : 'text.secondary' }}
+              {/* Tabs */}
+              <Tabs
+                value={activeTab}
+                onChange={(_, value) => setActiveTab(value)}
+                sx={{ borderBottom: 1, borderColor: 'divider' }}
               >
-                {currentTicket.description || 'No description provided.'}
-              </Typography>
+                <Tab icon={<DescriptionIcon />} iconPosition="start" label="Details" />
+                <Tab icon={<PlanningIcon />} iconPosition="start" label="AI Context" />
+                <Tab icon={<HandoffIcon />} iconPosition="start" label="Handoffs" />
+              </Tabs>
 
-              <Divider sx={{ my: 3 }} />
-
-              {/* Comments Section */}
-              <Typography variant="h6" gutterBottom>
-                Comments ({comments.length})
-              </Typography>
-
-              {/* Add Comment */}
-              <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  placeholder="Add a comment..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleAddComment()}
-                  multiline
-                  maxRows={4}
-                />
-                <IconButton
-                  color="primary"
-                  onClick={handleAddComment}
-                  disabled={!newComment.trim() || submittingComment}
-                >
-                  <SendIcon />
-                </IconButton>
-              </Box>
-
-              {/* Comments List */}
-              {loadingComments ? (
-                <Box>
-                  {[1, 2].map((i) => (
-                    <Skeleton key={i} variant="rectangular" height={60} sx={{ mb: 1, borderRadius: 1 }} />
-                  ))}
-                </Box>
-              ) : comments.length === 0 ? (
-                <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                  No comments yet
+              {/* Tab Panels */}
+              <TabPanel value={activeTab} index={0}>
+                {/* Description */}
+                <Typography variant="h6" gutterBottom>
+                  Description
                 </Typography>
-              ) : (
-                <List disablePadding>
-                  {comments.map((comment) => (
-                    <ListItem key={comment.id} alignItems="flex-start" sx={{ px: 0 }}>
-                      <ListItemAvatar>
-                        <Avatar sx={{ bgcolor: comment.isAiGenerated ? 'secondary.main' : 'primary.main' }}>
-                          {comment.isAiGenerated ? <AiIcon /> : <PersonIcon />}
-                        </Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="body2" fontWeight={500}>
-                              {comment.isAiGenerated ? 'Claude' : 'User'}
+                <Typography
+                  variant="body1"
+                  sx={{ whiteSpace: 'pre-wrap', color: currentTicket.description ? 'text.primary' : 'text.secondary' }}
+                >
+                  {currentTicket.description || 'No description provided.'}
+                </Typography>
+
+                <Divider sx={{ my: 3 }} />
+
+                {/* Comments Section */}
+                <Typography variant="h6" gutterBottom>
+                  Comments ({comments.length})
+                </Typography>
+
+                {/* Add Comment */}
+                <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    placeholder="Add a comment..."
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleAddComment()}
+                    multiline
+                    maxRows={4}
+                  />
+                  <IconButton
+                    color="primary"
+                    onClick={handleAddComment}
+                    disabled={!newComment.trim() || submittingComment}
+                  >
+                    <SendIcon />
+                  </IconButton>
+                </Box>
+
+                {/* Comments List */}
+                {loadingComments ? (
+                  <Box>
+                    {[1, 2].map((i) => (
+                      <Skeleton key={i} variant="rectangular" height={60} sx={{ mb: 1, borderRadius: 1 }} />
+                    ))}
+                  </Box>
+                ) : comments.length === 0 ? (
+                  <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                    No comments yet
+                  </Typography>
+                ) : (
+                  <List disablePadding>
+                    {comments.map((comment) => (
+                      <ListItem key={comment.id} alignItems="flex-start" sx={{ px: 0 }}>
+                        <ListItemAvatar>
+                          <Avatar sx={{ bgcolor: comment.isAiGenerated ? 'secondary.main' : 'primary.main' }}>
+                            {comment.isAiGenerated ? <AiIcon /> : <PersonIcon />}
+                          </Avatar>
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Typography variant="body2" fontWeight={500}>
+                                {comment.isAiGenerated ? 'Claude' : 'User'}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {new Date(comment.createdAt).toLocaleString()}
+                              </Typography>
+                            </Box>
+                          }
+                          secondary={
+                            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', mt: 0.5 }}>
+                              {comment.content}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {new Date(comment.createdAt).toLocaleString()}
-                            </Typography>
-                          </Box>
-                        }
-                        secondary={
-                          <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', mt: 0.5 }}>
-                            {comment.content}
-                          </Typography>
-                        }
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-              )}
+                          }
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                )}
+              </TabPanel>
+
+              <TabPanel value={activeTab} index={1}>
+                <PlanningTimeline ticketId={currentTicket.id} />
+              </TabPanel>
+
+              <TabPanel value={activeTab} index={2}>
+                <TicketHandoffs ticketId={currentTicket.id} />
+              </TabPanel>
             </CardContent>
           </Card>
         </Grid>

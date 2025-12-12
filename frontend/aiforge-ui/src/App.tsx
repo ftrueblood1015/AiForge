@@ -7,6 +7,7 @@ import {
   TicketList,
   TicketDetail,
   HandoffList,
+  HandoffDetail,
   Settings,
 } from './pages';
 
@@ -20,6 +21,7 @@ function App() {
         <Route path="tickets" element={<TicketList />} />
         <Route path="tickets/:key" element={<TicketDetail />} />
         <Route path="handoffs" element={<HandoffList />} />
+        <Route path="handoffs/:id" element={<HandoffDetail />} />
         <Route path="settings" element={<Settings />} />
       </Route>
     </Routes>
