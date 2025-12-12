@@ -18,7 +18,12 @@
       "mcp__aiforge__create_ticket",
       "mcp__aiforge__start_planning",
       "mcp__aiforge__transition_ticket",
-      "Bash(npm install)"
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "mcp__aiforge__log_progress",
+      "Bash(npm run build:*)",
+      "mcp__aiforge__complete_planning",
+      "mcp__aiforge__create_handoff"
     ]
   }
 }
