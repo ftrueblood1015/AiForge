@@ -11,6 +11,7 @@ import {
   Menu as MenuIcon,
   Search as SearchIcon,
   Notifications as NotificationsIcon,
+  Keyboard as KeyboardIcon,
 } from '@mui/icons-material';
 import { alpha, styled } from '@mui/material/styles';
 
@@ -62,9 +63,10 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 interface HeaderProps {
   sidebarOpen: boolean;
   onToggleSidebar: () => void;
+  onShowShortcuts?: () => void;
 }
 
-export default function Header({ sidebarOpen, onToggleSidebar }: HeaderProps) {
+export default function Header({ sidebarOpen, onToggleSidebar, onShowShortcuts }: HeaderProps) {
   return (
     <AppBar
       position="fixed"
@@ -107,8 +109,13 @@ export default function Header({ sidebarOpen, onToggleSidebar }: HeaderProps) {
         <Box sx={{ flexGrow: 1 }} />
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Tooltip title="Keyboard shortcuts (Shift+?)">
+            <IconButton color="inherit" onClick={onShowShortcuts} aria-label="keyboard shortcuts">
+              <KeyboardIcon />
+            </IconButton>
+          </Tooltip>
           <Tooltip title="Notifications">
-            <IconButton color="inherit">
+            <IconButton color="inherit" aria-label="notifications">
               <NotificationsIcon />
             </IconButton>
           </Tooltip>

@@ -24,7 +24,11 @@
       "Bash(npm run build:*)",
       "mcp__aiforge__complete_planning",
       "mcp__aiforge__create_handoff",
-      "mcp__aiforge__get_ticket"
+      "mcp__aiforge__get_ticket",
+      "mcp__aiforge__log_decision",
+      "Bash(npm run test:run:*)",
+      "mcp__aiforge__search_tickets",
+      "mcp__aiforge__get_project"
     ]
   }
 }
