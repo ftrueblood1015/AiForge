@@ -1,5 +1,6 @@
 using AutoMapper;
 using AiForge.Application.DTOs.Comments;
+using AiForge.Application.DTOs.Handoffs;
 using AiForge.Application.DTOs.Projects;
 using AiForge.Application.DTOs.Tickets;
 using AiForge.Domain.Entities;
@@ -44,5 +45,8 @@ public class MappingProfile : Profile
 
         // TicketHistory mappings
         CreateMap<TicketHistory, TicketHistoryDto>();
+
+        // FileSnapshot mappings
+        CreateMap<FileSnapshot, FileSnapshotDto>();
     }
 }

@@ -27,6 +27,12 @@ public static class DependencyInjection
         services.AddScoped<ITicketHistoryRepository, TicketHistoryRepository>();
         services.AddScoped<IApiKeyRepository, ApiKeyRepository>();
 
+        // AI Feature Repositories
+        services.AddScoped<IPlanningSessionRepository, PlanningSessionRepository>();
+        services.AddScoped<IReasoningLogRepository, ReasoningLogRepository>();
+        services.AddScoped<IProgressEntryRepository, ProgressEntryRepository>();
+        services.AddScoped<IHandoffRepository, HandoffRepository>();
+
         return services;
     }
 }

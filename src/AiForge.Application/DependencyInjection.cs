@@ -17,6 +17,12 @@ public static class DependencyInjection
         services.AddScoped<ICommentService, CommentService>();
         services.AddScoped<ITicketHistoryService, TicketHistoryService>();
 
+        // AI Feature Services
+        services.AddScoped<IPlanningService, PlanningService>();
+        services.AddScoped<IHandoffService, HandoffService>();
+        services.AddScoped<IAiContextService, AiContextService>();
+        services.AddScoped<ISearchService, SearchService>();
+
         return services;
     }
 }
