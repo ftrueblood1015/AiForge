@@ -22,9 +22,24 @@ public class ProjectRepository : Repository<Project>, IProjectRepository
     {
     }
 
+    public override async Task<IEnumerable<Project>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .Include(p => p.Tickets)
+            .ToListAsync(cancellationToken);
+    }
+
+    public override async Task<Project?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .Include(p => p.Tickets)
+            .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+    }
+
     public async Task<Project?> GetByKeyAsync(string key, CancellationToken cancellationToken = default)
     {
         return await _dbSet
+            .Include(p => p.Tickets)
             .FirstOrDefaultAsync(p => p.Key == key, cancellationToken);
     }
 

@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using AiForge.Application;
 using AiForge.Infrastructure;
 using AiForge.Infrastructure.Data;
@@ -6,7 +7,12 @@ using AiForge.Api.Middleware;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Serialize enums as strings instead of integers
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
