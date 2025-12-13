@@ -21,6 +21,7 @@ public class AiForgeDbContext : DbContext
     public DbSet<FileSnapshot> FileSnapshots => Set<FileSnapshot>();
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
     public DbSet<ApiKeyUsage> ApiKeyUsages => Set<ApiKeyUsage>();
+    public DbSet<ImplementationPlan> ImplementationPlans => Set<ImplementationPlan>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
