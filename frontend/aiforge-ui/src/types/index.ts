@@ -4,6 +4,7 @@ export type TicketType = 'Task' | 'Bug' | 'Feature' | 'Enhancement';
 export type Priority = 'Low' | 'Medium' | 'High' | 'Critical';
 export type HandoffType = 'SessionEnd' | 'Blocker' | 'Milestone' | 'ContextDump';
 export type ProgressOutcome = 'Success' | 'Failure' | 'Partial' | 'Blocked';
+export type PlanStatus = 'Draft' | 'Approved' | 'Superseded' | 'Rejected';
 
 // Core Entities
 export interface Project {
@@ -127,6 +128,26 @@ export interface FileSnapshot {
   createdAt: string;
 }
 
+export interface ImplementationPlan {
+  id: string;
+  ticketId: string;
+  content: string;
+  status: PlanStatus;
+  version: number;
+  estimatedEffort: string | null;
+  affectedFiles: string[];
+  dependencyTicketIds: string[];
+  createdBy: string | null;
+  createdAt: string;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  supersededById: string | null;
+  supersededAt: string | null;
+  rejectedBy: string | null;
+  rejectedAt: string | null;
+  rejectionReason: string | null;
+}
+
 // API Request/Response Types
 export interface CreateProjectRequest {
   key: string;
@@ -169,4 +190,37 @@ export interface DashboardStats {
   totalTickets: number;
   ticketsByStatus: Record<TicketStatus, number>;
   recentTickets: Ticket[];
+}
+
+// Implementation Plan Request Types
+export interface CreateImplementationPlanRequest {
+  content: string;
+  estimatedEffort?: string;
+  affectedFiles?: string[];
+  dependencyTicketIds?: string[];
+  createdBy?: string;
+}
+
+export interface UpdateImplementationPlanRequest {
+  content?: string;
+  estimatedEffort?: string;
+  affectedFiles?: string[];
+  dependencyTicketIds?: string[];
+}
+
+export interface ApproveImplementationPlanRequest {
+  approvedBy?: string;
+}
+
+export interface RejectImplementationPlanRequest {
+  rejectedBy?: string;
+  rejectionReason?: string;
+}
+
+export interface SupersedeImplementationPlanRequest {
+  content: string;
+  estimatedEffort?: string;
+  affectedFiles?: string[];
+  dependencyTicketIds?: string[];
+  createdBy?: string;
 }
