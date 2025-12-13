@@ -22,6 +22,7 @@ public static class DependencyInjection
         services.AddScoped<IHandoffService, HandoffService>();
         services.AddScoped<IAiContextService, AiContextService>();
         services.AddScoped<ISearchService, SearchService>();
+        services.AddScoped<IImplementationPlanService, ImplementationPlanService>();
 
         return services;
     }

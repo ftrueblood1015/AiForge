@@ -32,6 +32,7 @@ public static class DependencyInjection
         services.AddScoped<IReasoningLogRepository, ReasoningLogRepository>();
         services.AddScoped<IProgressEntryRepository, ProgressEntryRepository>();
         services.AddScoped<IHandoffRepository, HandoffRepository>();
+        services.AddScoped<IImplementationPlanRepository, ImplementationPlanRepository>();
 
         return services;
     }
