@@ -28,4 +28,5 @@ public class Ticket
     public ICollection<ReasoningLog> ReasoningLogs { get; set; } = new List<ReasoningLog>();
     public ICollection<ProgressEntry> ProgressEntries { get; set; } = new List<ProgressEntry>();
     public ICollection<HandoffDocument> Handoffs { get; set; } = new List<HandoffDocument>();
+    public ICollection<ImplementationPlan> ImplementationPlans { get; set; } = new List<ImplementationPlan>();
 }
