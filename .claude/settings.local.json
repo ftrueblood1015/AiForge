@@ -30,7 +30,8 @@
       "mcp__aiforge__search_tickets",
       "mcp__aiforge__get_project",
       "mcp__aiforge__get_context",
-      "mcp__aiforge__add_comment"
+      "mcp__aiforge__add_comment",
+      "Bash(dotnet test:*)"
     ]
   }
 }
