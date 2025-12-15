@@ -40,6 +40,9 @@ public static class DependencyInjection
         services.AddScoped<ITestLinkRepository, TestLinkRepository>();
         services.AddScoped<ITechnicalDebtRepository, TechnicalDebtRepository>();
 
+        // Analytics Repositories
+        services.AddScoped<ISessionMetricsRepository, SessionMetricsRepository>();
+
         return services;
     }
 }

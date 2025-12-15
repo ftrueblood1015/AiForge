@@ -26,6 +26,7 @@ public class AiForgeDbContext : DbContext
     public DbSet<FileChange> FileChanges => Set<FileChange>();
     public DbSet<TestLink> TestLinks => Set<TestLink>();
     public DbSet<TechnicalDebt> TechnicalDebts => Set<TechnicalDebt>();
+    public DbSet<SessionMetrics> SessionMetrics => Set<SessionMetrics>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

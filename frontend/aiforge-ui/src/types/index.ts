@@ -407,3 +407,199 @@ export interface UpdateDebtRequest {
 export interface ResolveDebtRequest {
   resolutionTicketId?: string;
 }
+
+// Analytics Types
+export interface AnalyticsDashboard {
+  totalTickets: number;
+  ticketsInProgress: number;
+  ticketsCompleted: number;
+  totalSessions: number;
+  totalDecisions: number;
+  overallAverageConfidence: number;
+  lowConfidenceDecisionCount: number;
+  recentLowConfidenceDecisions: LowConfidenceDecision[];
+  topHotFiles: AnalyticsHotFile[];
+  openTechnicalDebtCount: number;
+  totalTokensUsed: number;
+  totalMinutesWorked: number;
+  handoffsCreated: number;
+  recentActivity: RecentActivity[];
+  generatedAt: string;
+}
+
+export interface LowConfidenceDecision {
+  reasoningLogId: string;
+  ticketId: string;
+  ticketKey: string;
+  ticketTitle: string;
+  decisionPoint: string;
+  chosenOption: string;
+  rationale: string;
+  confidencePercent: number;
+  sessionId: string | null;
+  createdAt: string;
+}
+
+export interface ConfidenceTrend {
+  dataPoints: ConfidenceTrendPoint[];
+  overallAverageConfidence: number;
+  totalDecisions: number;
+  lowConfidenceCount: number;
+  startDate: string | null;
+  endDate: string | null;
+}
+
+export interface ConfidenceTrendPoint {
+  date: string;
+  averageConfidence: number;
+  decisionCount: number;
+  lowConfidenceCount: number;
+}
+
+export interface TicketConfidenceSummary {
+  ticketId: string;
+  ticketKey: string;
+  ticketTitle: string;
+  ticketStatus: string;
+  averageConfidence: number;
+  totalDecisions: number;
+  lowConfidenceDecisions: number;
+  lowestConfidence: number | null;
+  lastDecisionAt: string | null;
+}
+
+export interface AnalyticsHotFile {
+  filePath: string;
+  modificationCount: number;
+  ticketCount: number;
+  totalLinesAdded: number;
+  totalLinesRemoved: number;
+  firstModified: string | null;
+  lastModified: string | null;
+  recentTicketKeys: string[];
+}
+
+export interface FileCorrelation {
+  filePath: string;
+  correlatedFiles: CorrelatedFile[];
+}
+
+export interface CorrelatedFile {
+  filePath: string;
+  cooccurrenceCount: number;
+  correlationStrength: number;
+}
+
+export interface RecurringIssue {
+  pattern: string;
+  occurrenceCount: number;
+  relatedTickets: RelatedTicket[];
+}
+
+export interface RelatedTicket {
+  ticketId: string;
+  ticketKey: string;
+  title: string;
+  status: string;
+  createdAt: string;
+}
+
+export interface DebtPatternSummary {
+  totalDebtItems: number;
+  openDebtItems: number;
+  resolvedDebtItems: number;
+  byCategory: DebtByCategory[];
+  bySeverity: DebtBySeverity[];
+  topHotspots: DebtHotspot[];
+}
+
+export interface DebtByCategory {
+  category: string;
+  count: number;
+  openCount: number;
+}
+
+export interface DebtBySeverity {
+  severity: string;
+  count: number;
+  openCount: number;
+}
+
+export interface DebtHotspot {
+  filePath: string;
+  debtItemCount: number;
+  categories: string[];
+}
+
+export interface SessionMetrics {
+  id: string;
+  ticketId: string;
+  ticketKey: string;
+  sessionId: string;
+  sessionStartedAt: string;
+  sessionEndedAt: string | null;
+  durationMinutes: number | null;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  totalTokens: number | null;
+  decisionsLogged: number;
+  progressEntriesLogged: number;
+  filesModified: number;
+  handoffCreated: boolean;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface TicketSessionAnalytics {
+  ticketId: string;
+  ticketKey: string;
+  ticketTitle: string;
+  totalSessions: number;
+  totalDurationMinutes: number;
+  averageDurationMinutes: number | null;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalTokens: number;
+  totalDecisions: number;
+  totalProgressEntries: number;
+  totalFilesModified: number;
+  handoffsCreated: number;
+  sessions: SessionMetrics[];
+}
+
+export interface ProductivityMetrics {
+  totalTicketsCompleted: number;
+  totalSessions: number;
+  totalDurationMinutes: number;
+  totalTokensUsed: number;
+  averageSessionsPerTicket: number;
+  averageMinutesPerTicket: number;
+  averageTokensPerTicket: number;
+  averageDecisionsPerTicket: number;
+  byTicketType: ProductivityByType[];
+  dailyTrend: ProductivityByDay[];
+  startDate: string | null;
+  endDate: string | null;
+}
+
+export interface ProductivityByType {
+  ticketType: string;
+  ticketCount: number;
+  averageMinutes: number;
+  averageTokens: number;
+}
+
+export interface ProductivityByDay {
+  date: string;
+  sessionCount: number;
+  ticketsWorkedOn: number;
+  totalMinutes: number;
+  totalTokens: number;
+}
+
+export interface RecentActivity {
+  activityType: string;
+  description: string;
+  ticketKey: string | null;
+  timestamp: string;
+}

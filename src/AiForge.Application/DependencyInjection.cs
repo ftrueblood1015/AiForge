@@ -30,6 +30,9 @@ public static class DependencyInjection
         services.AddScoped<ITestLinkService, TestLinkService>();
         services.AddScoped<ITechnicalDebtService, TechnicalDebtService>();
 
+        // Analytics Services
+        services.AddScoped<IAnalyticsService, AnalyticsService>();
+
         return services;
     }
 }
