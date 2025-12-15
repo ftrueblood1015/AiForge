@@ -11,6 +11,8 @@ import {
   ListItemIcon,
   ListItemText,
 } from '@mui/material';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   PlayArrow as ProgressIcon,
   ExpandMore as ExpandMoreIcon,
@@ -71,10 +73,53 @@ export default function ProgressEntryCard({ entry }: ProgressEntryCardProps) {
         </Box>
 
         {/* Content */}
-        <Box sx={{ mt: 2 }}>
-          <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-            {entry.content}
-          </Typography>
+        <Box
+          sx={{
+            mt: 2,
+            '& h1': { fontSize: '1.25rem', fontWeight: 600, mt: 1.5, mb: 0.5 },
+            '& h2': { fontSize: '1.1rem', fontWeight: 600, mt: 1.5, mb: 0.5 },
+            '& h3': { fontSize: '1rem', fontWeight: 600, mt: 1, mb: 0.5 },
+            '& p': { mb: 1, fontSize: '0.875rem' },
+            '& ul, & ol': { pl: 2.5, mb: 1 },
+            '& li': { mb: 0.25, fontSize: '0.875rem' },
+            '& code': {
+              bgcolor: 'grey.100',
+              px: 0.5,
+              py: 0.25,
+              borderRadius: 0.5,
+              fontFamily: 'monospace',
+              fontSize: '0.8rem',
+            },
+            '& pre': {
+              bgcolor: 'grey.900',
+              color: 'grey.100',
+              p: 1.5,
+              borderRadius: 1,
+              overflow: 'auto',
+              fontSize: '0.8rem',
+              '& code': {
+                bgcolor: 'transparent',
+                p: 0,
+              },
+            },
+            '& blockquote': {
+              borderLeft: 3,
+              borderColor: 'primary.main',
+              pl: 1.5,
+              ml: 0,
+              color: 'text.secondary',
+              fontSize: '0.875rem',
+            },
+            '& a': {
+              color: 'primary.main',
+              textDecoration: 'none',
+              '&:hover': {
+                textDecoration: 'underline',
+              },
+            },
+          }}
+        >
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{entry.content}</ReactMarkdown>
         </Box>
 
         {/* Expanded Content */}

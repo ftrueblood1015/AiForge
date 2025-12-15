@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   Box,
   Typography,
@@ -272,12 +274,71 @@ export default function TicketDetail() {
                 <Typography variant="h6" gutterBottom>
                   Description
                 </Typography>
-                <Typography
-                  variant="body1"
-                  sx={{ whiteSpace: 'pre-wrap', color: currentTicket.description ? 'text.primary' : 'text.secondary' }}
-                >
-                  {currentTicket.description || 'No description provided.'}
-                </Typography>
+                {currentTicket.description ? (
+                  <Box
+                    sx={{
+                      '& h1': { fontSize: '1.5rem', fontWeight: 600, mt: 2, mb: 1 },
+                      '& h2': { fontSize: '1.25rem', fontWeight: 600, mt: 2, mb: 1 },
+                      '& h3': { fontSize: '1.1rem', fontWeight: 600, mt: 1.5, mb: 0.5 },
+                      '& p': { mb: 1.5 },
+                      '& ul, & ol': { pl: 3, mb: 1.5 },
+                      '& li': { mb: 0.5 },
+                      '& code': {
+                        bgcolor: 'grey.100',
+                        px: 0.5,
+                        py: 0.25,
+                        borderRadius: 0.5,
+                        fontFamily: 'monospace',
+                        fontSize: '0.875em',
+                      },
+                      '& pre': {
+                        bgcolor: 'grey.900',
+                        color: 'grey.100',
+                        p: 2,
+                        borderRadius: 1,
+                        overflow: 'auto',
+                        '& code': {
+                          bgcolor: 'transparent',
+                          p: 0,
+                        },
+                      },
+                      '& blockquote': {
+                        borderLeft: 4,
+                        borderColor: 'primary.main',
+                        pl: 2,
+                        ml: 0,
+                        color: 'text.secondary',
+                      },
+                      '& table': {
+                        width: '100%',
+                        borderCollapse: 'collapse',
+                        mb: 2,
+                      },
+                      '& th, & td': {
+                        border: 1,
+                        borderColor: 'divider',
+                        p: 1,
+                      },
+                      '& th': {
+                        bgcolor: 'grey.100',
+                        fontWeight: 600,
+                      },
+                      '& a': {
+                        color: 'primary.main',
+                        textDecoration: 'none',
+                        '&:hover': {
+                          textDecoration: 'underline',
+                        },
+                      },
+                    }}
+                  >
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{currentTicket.description}</ReactMarkdown>
+                  </Box>
+                ) : (
+                  <Typography variant="body1" color="text.secondary">
+                    No description provided.
+                  </Typography>
+                )}
 
                 <Divider sx={{ my: 3 }} />
 
@@ -339,9 +400,47 @@ export default function TicketDetail() {
                             </Box>
                           }
                           secondary={
-                            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', mt: 0.5 }}>
-                              {comment.content}
-                            </Typography>
+                            <Box
+                              component="div"
+                              sx={{
+                                mt: 0.5,
+                                '& p': { mb: 1, fontSize: '0.875rem', '&:last-child': { mb: 0 } },
+                                '& h1, & h2, & h3': { fontSize: '1rem', fontWeight: 600, mt: 1, mb: 0.5 },
+                                '& ul, & ol': { pl: 2.5, mb: 1, fontSize: '0.875rem' },
+                                '& li': { mb: 0.25 },
+                                '& code': {
+                                  bgcolor: 'grey.100',
+                                  px: 0.5,
+                                  py: 0.25,
+                                  borderRadius: 0.5,
+                                  fontFamily: 'monospace',
+                                  fontSize: '0.8rem',
+                                },
+                                '& pre': {
+                                  bgcolor: 'grey.900',
+                                  color: 'grey.100',
+                                  p: 1.5,
+                                  borderRadius: 1,
+                                  overflow: 'auto',
+                                  fontSize: '0.8rem',
+                                  '& code': { bgcolor: 'transparent', p: 0 },
+                                },
+                                '& blockquote': {
+                                  borderLeft: 3,
+                                  borderColor: 'primary.main',
+                                  pl: 1.5,
+                                  ml: 0,
+                                  color: 'text.secondary',
+                                },
+                                '& a': {
+                                  color: 'primary.main',
+                                  textDecoration: 'none',
+                                  '&:hover': { textDecoration: 'underline' },
+                                },
+                              }}
+                            >
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>{comment.content}</ReactMarkdown>
+                            </Box>
                           }
                         />
                       </ListItem>
