@@ -13,6 +13,7 @@ const TicketDetail = lazy(() => import('./pages/TicketDetail'));
 const HandoffList = lazy(() => import('./pages/HandoffList'));
 const HandoffDetail = lazy(() => import('./pages/HandoffDetail'));
 const Settings = lazy(() => import('./pages/Settings'));
+const TechnicalDebtDashboard = lazy(() => import('./pages/TechnicalDebtDashboard'));
 
 // Loading fallback component
 function PageLoader() {
@@ -95,6 +96,14 @@ function App() {
           element={
             <Suspense fallback={<PageLoader />}>
               <Settings />
+            </Suspense>
+          }
+        />
+        <Route
+          path="debt"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TechnicalDebtDashboard />
             </Suspense>
           }
         />

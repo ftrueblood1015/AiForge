@@ -35,6 +35,11 @@ public static class DependencyInjection
         services.AddScoped<IImplementationPlanRepository, ImplementationPlanRepository>();
         services.AddScoped<IEffortEstimationRepository, EffortEstimationRepository>();
 
+        // Code Intelligence Repositories
+        services.AddScoped<IFileChangeRepository, FileChangeRepository>();
+        services.AddScoped<ITestLinkRepository, TestLinkRepository>();
+        services.AddScoped<ITechnicalDebtRepository, TechnicalDebtRepository>();
+
         return services;
     }
 }

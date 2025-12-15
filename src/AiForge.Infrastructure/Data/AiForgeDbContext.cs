@@ -23,6 +23,9 @@ public class AiForgeDbContext : DbContext
     public DbSet<ApiKeyUsage> ApiKeyUsages => Set<ApiKeyUsage>();
     public DbSet<ImplementationPlan> ImplementationPlans => Set<ImplementationPlan>();
     public DbSet<EffortEstimation> EffortEstimations => Set<EffortEstimation>();
+    public DbSet<FileChange> FileChanges => Set<FileChange>();
+    public DbSet<TestLink> TestLinks => Set<TestLink>();
+    public DbSet<TechnicalDebt> TechnicalDebts => Set<TechnicalDebt>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

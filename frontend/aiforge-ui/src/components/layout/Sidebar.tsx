@@ -16,6 +16,7 @@ import {
   Assignment as AssignmentIcon,
   Description as DescriptionIcon,
   Settings as SettingsIcon,
+  Warning as DebtIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -30,6 +31,7 @@ const menuItems = [
   { text: 'Projects', icon: <FolderIcon />, path: '/projects' },
   { text: 'Tickets', icon: <AssignmentIcon />, path: '/tickets' },
   { text: 'Handoffs', icon: <DescriptionIcon />, path: '/handoffs' },
+  { text: 'Tech Debt', icon: <DebtIcon />, path: '/debt' },
 ];
 
 const bottomMenuItems = [

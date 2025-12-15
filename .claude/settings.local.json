@@ -40,7 +40,10 @@
       "mcp__aiforge__get_implementation_plan",
       "mcp__aiforge__update_implementation_plan",
       "mcp__aiforge__approve_implementation_plan",
-      "mcp__aiforge__record_actual_effort"
+      "mcp__aiforge__record_actual_effort",
+      "mcp__aiforge__estimate_ticket",
+      "Bash(dotnet ef migrations remove:*)",
+      "Bash(sqlcmd:*)"
     ]
   }
 }

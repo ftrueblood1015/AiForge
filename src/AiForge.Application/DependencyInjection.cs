@@ -25,6 +25,11 @@ public static class DependencyInjection
         services.AddScoped<IImplementationPlanService, ImplementationPlanService>();
         services.AddScoped<IEffortEstimationService, EffortEstimationService>();
 
+        // Code Intelligence Services
+        services.AddScoped<IFileChangeService, FileChangeService>();
+        services.AddScoped<ITestLinkService, TestLinkService>();
+        services.AddScoped<ITechnicalDebtService, TechnicalDebtService>();
+
         return services;
     }
 }

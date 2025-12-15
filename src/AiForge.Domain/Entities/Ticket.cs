@@ -30,4 +30,8 @@ public class Ticket
     public ICollection<HandoffDocument> Handoffs { get; set; } = new List<HandoffDocument>();
     public ICollection<ImplementationPlan> ImplementationPlans { get; set; } = new List<ImplementationPlan>();
     public ICollection<EffortEstimation> EffortEstimations { get; set; } = new List<EffortEstimation>();
+    public ICollection<FileChange> FileChanges { get; set; } = new List<FileChange>();
+    public ICollection<TestLink> TestLinks { get; set; } = new List<TestLink>();
+    public ICollection<TechnicalDebt> OriginatedDebts { get; set; } = new List<TechnicalDebt>();
+    public ICollection<TechnicalDebt> ResolvedDebts { get; set; } = new List<TechnicalDebt>();
 }

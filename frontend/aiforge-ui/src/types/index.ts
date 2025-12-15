@@ -274,3 +274,136 @@ export interface RecordActualEffortRequest {
   actualEffort: EffortSize;
   varianceNotes?: string;
 }
+
+// Code Intelligence Enums
+export type FileChangeType = 'Created' | 'Modified' | 'Deleted' | 'Renamed';
+export type TestOutcome = 'Passed' | 'Failed' | 'Skipped' | 'NotRun';
+export type DebtCategory = 'Performance' | 'Security' | 'Maintainability' | 'Testing' | 'Documentation' | 'Architecture';
+export type DebtSeverity = 'Low' | 'Medium' | 'High' | 'Critical';
+export type DebtStatus = 'Open' | 'InProgress' | 'Resolved' | 'Accepted';
+
+// Code Intelligence Entities
+export interface FileChange {
+  id: string;
+  ticketId: string;
+  ticketKey: string | null;
+  filePath: string;
+  changeType: FileChangeType;
+  oldFilePath: string | null;
+  changeReason: string | null;
+  linesAdded: number | null;
+  linesRemoved: number | null;
+  sessionId: string | null;
+  createdAt: string;
+}
+
+export interface TestLink {
+  id: string;
+  ticketId: string;
+  ticketKey: string | null;
+  testFilePath: string;
+  testName: string | null;
+  testedFunctionality: string | null;
+  outcome: TestOutcome | null;
+  linkedFilePath: string | null;
+  sessionId: string | null;
+  createdAt: string;
+  lastRunAt: string | null;
+}
+
+export interface TechnicalDebt {
+  id: string;
+  originatingTicketId: string;
+  originatingTicketKey: string | null;
+  resolutionTicketId: string | null;
+  resolutionTicketKey: string | null;
+  title: string;
+  description: string | null;
+  category: DebtCategory;
+  severity: DebtSeverity;
+  status: DebtStatus;
+  rationale: string | null;
+  affectedFiles: string | null;
+  sessionId: string | null;
+  createdAt: string;
+  resolvedAt: string | null;
+}
+
+// Code Intelligence API Types
+export interface FileHistoryResponse {
+  filePath: string;
+  changes: FileChange[];
+  totalTickets: number;
+}
+
+export interface HotFile {
+  filePath: string;
+  changeCount: number;
+  lastModified: string;
+}
+
+export interface FileCoverageResponse {
+  filePath: string;
+  tests: TestLink[];
+  totalTests: number;
+}
+
+export interface DebtBacklogResponse {
+  items: TechnicalDebt[];
+  totalCount: number;
+}
+
+export interface DebtSummaryResponse {
+  totalOpen: number;
+  totalResolved: number;
+  byCategory: Record<string, number>;
+  bySeverity: Record<string, number>;
+}
+
+// Code Intelligence Request Types
+export interface LogFileChangeRequest {
+  filePath: string;
+  changeType: FileChangeType;
+  oldFilePath?: string;
+  changeReason?: string;
+  linesAdded?: number;
+  linesRemoved?: number;
+  sessionId?: string;
+}
+
+export interface LinkTestRequest {
+  testFilePath: string;
+  testName?: string;
+  testedFunctionality?: string;
+  linkedFilePath?: string;
+  outcome?: TestOutcome;
+  sessionId?: string;
+}
+
+export interface UpdateTestOutcomeRequest {
+  outcome: TestOutcome;
+}
+
+export interface CreateDebtRequest {
+  title: string;
+  description?: string;
+  category: DebtCategory;
+  severity: DebtSeverity;
+  rationale?: string;
+  affectedFiles?: string;
+  sessionId?: string;
+}
+
+export interface UpdateDebtRequest {
+  title?: string;
+  description?: string;
+  category?: DebtCategory;
+  severity?: DebtSeverity;
+  status?: DebtStatus;
+  rationale?: string;
+  affectedFiles?: string;
+}
+
+export interface ResolveDebtRequest {
+  resolutionTicketId?: string;
+}
