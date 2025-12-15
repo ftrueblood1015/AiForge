@@ -47,7 +47,8 @@
       "mcp__aiforge__log_file_change",
       "mcp__aiforge__log_session_metrics",
       "mcp__aiforge__update_ticket",
-      "mcp__aiforge__update_session_metrics"
+      "mcp__aiforge__update_session_metrics",
+      "mcp__aiforge__get_ticket_analytics"
     ]
   }
 }

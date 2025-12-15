@@ -43,6 +43,7 @@ import {
   ListAlt as PlanIcon,
   Assessment as EstimationIcon,
   Code as CodeIcon,
+  BarChart as AnalyticsIcon,
 } from '@mui/icons-material';
 import { useTicketStore } from '../stores/ticketStore';
 import { ticketsApi } from '../api/tickets';
@@ -52,6 +53,7 @@ import { TicketHistoryTimeline } from '../components/history';
 import { ImplementationPlanView } from '../components/plans';
 import { EstimationSection, EstimationHistoryTimeline } from '../components/estimation';
 import { CodeIntelligenceTab } from '../components/codeIntelligence';
+import { TicketAnalyticsTab } from '../components/analytics';
 import type { TicketType, TicketStatus, Priority, Comment } from '../types';
 
 const typeIcons: Record<TicketType, React.ReactNode> = {
@@ -266,6 +268,7 @@ export default function TicketDetail() {
                 <Tab icon={<HandoffIcon />} iconPosition="start" label="Handoffs" />
                 <Tab icon={<HistoryIcon />} iconPosition="start" label="History" />
                 <Tab icon={<CodeIcon />} iconPosition="start" label="Code Intel" />
+                <Tab icon={<AnalyticsIcon />} iconPosition="start" label="Analytics" />
               </Tabs>
 
               {/* Tab Panels */}
@@ -471,6 +474,10 @@ export default function TicketDetail() {
 
               <TabPanel value={activeTab} index={6}>
                 <CodeIntelligenceTab ticketId={currentTicket.id} />
+              </TabPanel>
+
+              <TabPanel value={activeTab} index={7}>
+                <TicketAnalyticsTab ticketId={currentTicket.id} />
               </TabPanel>
             </CardContent>
           </Card>
