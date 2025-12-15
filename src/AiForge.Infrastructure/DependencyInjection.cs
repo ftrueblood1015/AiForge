@@ -33,6 +33,7 @@ public static class DependencyInjection
         services.AddScoped<IProgressEntryRepository, ProgressEntryRepository>();
         services.AddScoped<IHandoffRepository, HandoffRepository>();
         services.AddScoped<IImplementationPlanRepository, ImplementationPlanRepository>();
+        services.AddScoped<IEffortEstimationRepository, EffortEstimationRepository>();
 
         return services;
     }

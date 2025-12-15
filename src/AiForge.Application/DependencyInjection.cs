@@ -23,6 +23,7 @@ public static class DependencyInjection
         services.AddScoped<IAiContextService, AiContextService>();
         services.AddScoped<ISearchService, SearchService>();
         services.AddScoped<IImplementationPlanService, ImplementationPlanService>();
+        services.AddScoped<IEffortEstimationService, EffortEstimationService>();
 
         return services;
     }

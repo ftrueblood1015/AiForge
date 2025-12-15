@@ -39,6 +39,7 @@ import {
   Folder as HandoffIcon,
   History as HistoryIcon,
   ListAlt as PlanIcon,
+  Assessment as EstimationIcon,
 } from '@mui/icons-material';
 import { useTicketStore } from '../stores/ticketStore';
 import { ticketsApi } from '../api/tickets';
@@ -46,6 +47,7 @@ import { PlanningTimeline } from '../components/planning';
 import { TicketHandoffs } from '../components/handoffs';
 import { TicketHistoryTimeline } from '../components/history';
 import { ImplementationPlanView } from '../components/plans';
+import { EstimationSection, EstimationHistoryTimeline } from '../components/estimation';
 import type { TicketType, TicketStatus, Priority, Comment } from '../types';
 
 const typeIcons: Record<TicketType, React.ReactNode> = {
@@ -255,6 +257,7 @@ export default function TicketDetail() {
               >
                 <Tab icon={<DescriptionIcon />} iconPosition="start" label="Details" />
                 <Tab icon={<PlanIcon />} iconPosition="start" label="Plan" />
+                <Tab icon={<EstimationIcon />} iconPosition="start" label="Estimation" />
                 <Tab icon={<PlanningIcon />} iconPosition="start" label="AI Context" />
                 <Tab icon={<HandoffIcon />} iconPosition="start" label="Handoffs" />
                 <Tab icon={<HistoryIcon />} iconPosition="start" label="History" />
@@ -349,14 +352,18 @@ export default function TicketDetail() {
               </TabPanel>
 
               <TabPanel value={activeTab} index={2}>
-                <PlanningTimeline ticketId={currentTicket.id} />
+                <EstimationHistoryTimeline ticketId={currentTicket.id} />
               </TabPanel>
 
               <TabPanel value={activeTab} index={3}>
-                <TicketHandoffs ticketId={currentTicket.id} />
+                <PlanningTimeline ticketId={currentTicket.id} />
               </TabPanel>
 
               <TabPanel value={activeTab} index={4}>
+                <TicketHandoffs ticketId={currentTicket.id} />
+              </TabPanel>
+
+              <TabPanel value={activeTab} index={5}>
                 <TicketHistoryTimeline ticketId={currentTicket.id} ticket={currentTicket} />
               </TabPanel>
             </CardContent>
@@ -419,6 +426,13 @@ export default function TicketDetail() {
                   </Typography>
                 </Box>
               </Box>
+            </CardContent>
+          </Card>
+
+          {/* Estimation */}
+          <Card sx={{ mt: 2 }}>
+            <CardContent>
+              <EstimationSection ticketId={currentTicket.id} />
             </CardContent>
           </Card>
 

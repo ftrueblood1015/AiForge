@@ -5,6 +5,8 @@ export type Priority = 'Low' | 'Medium' | 'High' | 'Critical';
 export type HandoffType = 'SessionEnd' | 'Blocker' | 'Milestone' | 'ContextDump';
 export type ProgressOutcome = 'Success' | 'Failure' | 'Partial' | 'Blocked';
 export type PlanStatus = 'Draft' | 'Approved' | 'Superseded' | 'Rejected';
+export type ComplexityLevel = 'Low' | 'Medium' | 'High' | 'VeryHigh';
+export type EffortSize = 'XSmall' | 'Small' | 'Medium' | 'Large' | 'XLarge';
 
 // Core Entities
 export interface Project {
@@ -223,4 +225,52 @@ export interface SupersedeImplementationPlanRequest {
   affectedFiles?: string[];
   dependencyTicketIds?: string[];
   createdBy?: string;
+}
+
+// Effort Estimation Types
+export interface EffortEstimation {
+  id: string;
+  ticketId: string;
+  complexity: ComplexityLevel;
+  estimatedEffort: EffortSize;
+  confidencePercent: number;
+  estimationReasoning: string | null;
+  assumptions: string | null;
+  actualEffort: EffortSize | null;
+  varianceNotes: string | null;
+  version: number;
+  revisionReason: string | null;
+  sessionId: string | null;
+  isLatest: boolean;
+  createdAt: string;
+}
+
+export interface EstimationHistoryResponse {
+  ticketId: string;
+  estimations: EffortEstimation[];
+  totalVersions: number;
+}
+
+export interface CreateEstimationRequest {
+  complexity: ComplexityLevel;
+  estimatedEffort: EffortSize;
+  confidencePercent: number;
+  estimationReasoning?: string;
+  assumptions?: string;
+  sessionId?: string;
+}
+
+export interface ReviseEstimationRequest {
+  complexity: ComplexityLevel;
+  estimatedEffort: EffortSize;
+  confidencePercent: number;
+  estimationReasoning?: string;
+  assumptions?: string;
+  revisionReason: string;
+  sessionId?: string;
+}
+
+export interface RecordActualEffortRequest {
+  actualEffort: EffortSize;
+  varianceNotes?: string;
 }

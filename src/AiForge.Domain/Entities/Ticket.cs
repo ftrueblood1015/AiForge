@@ -29,4 +29,5 @@ public class Ticket
     public ICollection<ProgressEntry> ProgressEntries { get; set; } = new List<ProgressEntry>();
     public ICollection<HandoffDocument> Handoffs { get; set; } = new List<HandoffDocument>();
     public ICollection<ImplementationPlan> ImplementationPlans { get; set; } = new List<ImplementationPlan>();
+    public ICollection<EffortEstimation> EffortEstimations { get; set; } = new List<EffortEstimation>();
 }

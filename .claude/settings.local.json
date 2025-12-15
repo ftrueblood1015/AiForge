@@ -31,7 +31,16 @@
       "mcp__aiforge__get_project",
       "mcp__aiforge__get_context",
       "mcp__aiforge__add_comment",
-      "Bash(dotnet test:*)"
+      "Bash(dotnet test:*)",
+      "Bash(curl:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(netstat:*)",
+      "mcp__aiforge__create_implementation_plan",
+      "mcp__aiforge__get_implementation_plan",
+      "mcp__aiforge__update_implementation_plan",
+      "mcp__aiforge__approve_implementation_plan",
+      "mcp__aiforge__record_actual_effort"
     ]
   }
 }
