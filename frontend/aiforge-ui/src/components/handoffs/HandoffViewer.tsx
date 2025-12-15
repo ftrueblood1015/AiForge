@@ -33,6 +33,8 @@ import {
 } from '@mui/icons-material';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useTheme } from '@mui/material/styles';
+import { useMarkdownStyles } from '../../hooks';
 import type { HandoffDocument, HandoffType, FileSnapshot } from '../../types';
 import CodeSnippet from './CodeSnippet';
 import FileDiff from './FileDiff';
@@ -64,6 +66,8 @@ function TabPanel({ children, value, index }: TabPanelProps) {
 }
 
 export default function HandoffViewer({ handoff, snapshots = [] }: HandoffViewerProps) {
+  const theme = useTheme();
+  const markdownStyles = useMarkdownStyles();
   const [activeTab, setActiveTab] = useState(0);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     assumptions: true,
@@ -199,7 +203,7 @@ export default function HandoffViewer({ handoff, snapshots = [] }: HandoffViewer
           </Box>
 
           {/* Summary */}
-          <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+          <Box sx={{ mt: 2, p: 2, bgcolor: theme.palette.mode === 'dark' ? 'grey.800' : 'grey.100', borderRadius: 1 }}>
             <Typography variant="body1">{handoff.summary}</Typography>
           </Box>
         </CardContent>
@@ -220,56 +224,7 @@ export default function HandoffViewer({ handoff, snapshots = [] }: HandoffViewer
       <TabPanel value={activeTab} index={0}>
         <Card>
           <CardContent>
-            <Box
-              sx={{
-                '& h1': { fontSize: '1.5rem', fontWeight: 600, mt: 2, mb: 1 },
-                '& h2': { fontSize: '1.25rem', fontWeight: 600, mt: 2, mb: 1 },
-                '& h3': { fontSize: '1.1rem', fontWeight: 600, mt: 1.5, mb: 0.5 },
-                '& p': { mb: 1.5 },
-                '& ul, & ol': { pl: 3, mb: 1.5 },
-                '& li': { mb: 0.5 },
-                '& code': {
-                  bgcolor: 'grey.100',
-                  px: 0.5,
-                  py: 0.25,
-                  borderRadius: 0.5,
-                  fontFamily: 'monospace',
-                  fontSize: '0.875em',
-                },
-                '& pre': {
-                  bgcolor: 'grey.900',
-                  color: 'grey.100',
-                  p: 2,
-                  borderRadius: 1,
-                  overflow: 'auto',
-                  '& code': {
-                    bgcolor: 'transparent',
-                    p: 0,
-                  },
-                },
-                '& blockquote': {
-                  borderLeft: 4,
-                  borderColor: 'primary.main',
-                  pl: 2,
-                  ml: 0,
-                  color: 'text.secondary',
-                },
-                '& table': {
-                  width: '100%',
-                  borderCollapse: 'collapse',
-                  mb: 2,
-                },
-                '& th, & td': {
-                  border: 1,
-                  borderColor: 'divider',
-                  p: 1,
-                },
-                '& th': {
-                  bgcolor: 'grey.100',
-                  fontWeight: 600,
-                },
-              }}
-            >
+            <Box sx={markdownStyles}>
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{handoff.content}</ReactMarkdown>
             </Box>
           </CardContent>

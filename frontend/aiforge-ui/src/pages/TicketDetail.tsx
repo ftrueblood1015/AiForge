@@ -47,6 +47,7 @@ import {
 } from '@mui/icons-material';
 import { useTicketStore } from '../stores/ticketStore';
 import { ticketsApi } from '../api/tickets';
+import { useMarkdownStyles, useCompactMarkdownStyles } from '../hooks';
 import { PlanningTimeline } from '../components/planning';
 import { TicketHandoffs } from '../components/handoffs';
 import { TicketHistoryTimeline } from '../components/history';
@@ -104,6 +105,8 @@ export default function TicketDetail() {
   const { key } = useParams<{ key: string }>();
   const navigate = useNavigate();
   const { currentTicket, isLoading, error, fetchTicket, updateTicketStatus } = useTicketStore();
+  const markdownStyles = useMarkdownStyles();
+  const compactMarkdownStyles = useCompactMarkdownStyles();
 
   const [activeTab, setActiveTab] = useState(0);
   const [statusMenuAnchor, setStatusMenuAnchor] = useState<null | HTMLElement>(null);
@@ -278,63 +281,7 @@ export default function TicketDetail() {
                   Description
                 </Typography>
                 {currentTicket.description ? (
-                  <Box
-                    sx={{
-                      '& h1': { fontSize: '1.5rem', fontWeight: 600, mt: 2, mb: 1 },
-                      '& h2': { fontSize: '1.25rem', fontWeight: 600, mt: 2, mb: 1 },
-                      '& h3': { fontSize: '1.1rem', fontWeight: 600, mt: 1.5, mb: 0.5 },
-                      '& p': { mb: 1.5 },
-                      '& ul, & ol': { pl: 3, mb: 1.5 },
-                      '& li': { mb: 0.5 },
-                      '& code': {
-                        bgcolor: 'grey.100',
-                        px: 0.5,
-                        py: 0.25,
-                        borderRadius: 0.5,
-                        fontFamily: 'monospace',
-                        fontSize: '0.875em',
-                      },
-                      '& pre': {
-                        bgcolor: 'grey.900',
-                        color: 'grey.100',
-                        p: 2,
-                        borderRadius: 1,
-                        overflow: 'auto',
-                        '& code': {
-                          bgcolor: 'transparent',
-                          p: 0,
-                        },
-                      },
-                      '& blockquote': {
-                        borderLeft: 4,
-                        borderColor: 'primary.main',
-                        pl: 2,
-                        ml: 0,
-                        color: 'text.secondary',
-                      },
-                      '& table': {
-                        width: '100%',
-                        borderCollapse: 'collapse',
-                        mb: 2,
-                      },
-                      '& th, & td': {
-                        border: 1,
-                        borderColor: 'divider',
-                        p: 1,
-                      },
-                      '& th': {
-                        bgcolor: 'grey.100',
-                        fontWeight: 600,
-                      },
-                      '& a': {
-                        color: 'primary.main',
-                        textDecoration: 'none',
-                        '&:hover': {
-                          textDecoration: 'underline',
-                        },
-                      },
-                    }}
-                  >
+                  <Box sx={markdownStyles}>
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{currentTicket.description}</ReactMarkdown>
                   </Box>
                 ) : (
@@ -405,42 +352,7 @@ export default function TicketDetail() {
                           secondary={
                             <Box
                               component="div"
-                              sx={{
-                                mt: 0.5,
-                                '& p': { mb: 1, fontSize: '0.875rem', '&:last-child': { mb: 0 } },
-                                '& h1, & h2, & h3': { fontSize: '1rem', fontWeight: 600, mt: 1, mb: 0.5 },
-                                '& ul, & ol': { pl: 2.5, mb: 1, fontSize: '0.875rem' },
-                                '& li': { mb: 0.25 },
-                                '& code': {
-                                  bgcolor: 'grey.100',
-                                  px: 0.5,
-                                  py: 0.25,
-                                  borderRadius: 0.5,
-                                  fontFamily: 'monospace',
-                                  fontSize: '0.8rem',
-                                },
-                                '& pre': {
-                                  bgcolor: 'grey.900',
-                                  color: 'grey.100',
-                                  p: 1.5,
-                                  borderRadius: 1,
-                                  overflow: 'auto',
-                                  fontSize: '0.8rem',
-                                  '& code': { bgcolor: 'transparent', p: 0 },
-                                },
-                                '& blockquote': {
-                                  borderLeft: 3,
-                                  borderColor: 'primary.main',
-                                  pl: 1.5,
-                                  ml: 0,
-                                  color: 'text.secondary',
-                                },
-                                '& a': {
-                                  color: 'primary.main',
-                                  textDecoration: 'none',
-                                  '&:hover': { textDecoration: 'underline' },
-                                },
-                              }}
+                              sx={{ mt: 0.5, ...compactMarkdownStyles }}
                             >
                               <ReactMarkdown remarkPlugins={[remarkGfm]}>{comment.content}</ReactMarkdown>
                             </Box>

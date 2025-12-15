@@ -36,6 +36,7 @@ import {
   Schedule as EffortIcon,
 } from '@mui/icons-material';
 import ReactMarkdown from 'react-markdown';
+import { useTheme } from '@mui/material/styles';
 import { plansApi } from '../../api/plans';
 import type { ImplementationPlan, PlanStatus } from '../../types';
 
@@ -51,6 +52,7 @@ const statusConfig: Record<PlanStatus, { icon: React.ReactElement; color: 'defau
 };
 
 export default function ImplementationPlanView({ ticketId }: ImplementationPlanViewProps) {
+  const theme = useTheme();
   const [plans, setPlans] = useState<ImplementationPlan[]>([]);
   const [currentPlan, setCurrentPlan] = useState<ImplementationPlan | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -222,14 +224,14 @@ export default function ImplementationPlanView({ ticketId }: ImplementationPlanV
           {/* Plan Content */}
           <Box sx={{
             '& pre': {
-              bgcolor: 'grey.100',
+              bgcolor: theme.palette.mode === 'dark' ? 'grey.800' : 'grey.100',
               p: 2,
               borderRadius: 1,
               overflow: 'auto',
               fontSize: '0.875rem',
             },
             '& code': {
-              bgcolor: 'grey.100',
+              bgcolor: theme.palette.mode === 'dark' ? 'grey.800' : 'grey.100',
               px: 0.5,
               borderRadius: 0.5,
               fontSize: '0.875rem',
