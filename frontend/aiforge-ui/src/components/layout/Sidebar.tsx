@@ -18,6 +18,8 @@ import {
   Settings as SettingsIcon,
   Warning as DebtIcon,
   Analytics as AnalyticsIcon,
+  SmartToy as AgentIcon,
+  Psychology as SkillIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -34,6 +36,11 @@ const menuItems = [
   { text: 'Handoffs', icon: <DescriptionIcon />, path: '/handoffs' },
   { text: 'Analytics', icon: <AnalyticsIcon />, path: '/analytics' },
   { text: 'Tech Debt', icon: <DebtIcon />, path: '/debt' },
+];
+
+const configMenuItems = [
+  { text: 'Agents', icon: <AgentIcon />, path: '/agents' },
+  { text: 'Skills', icon: <SkillIcon />, path: '/skills' },
 ];
 
 const bottomMenuItems = [
@@ -79,6 +86,39 @@ export default function Sidebar({ open }: SidebarProps) {
       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <List sx={{ flex: 1 }}>
           {menuItems.map((item) => (
+            <ListItem key={item.text} disablePadding>
+              <ListItemButton
+                selected={isSelected(item.path)}
+                onClick={() => navigate(item.path)}
+                sx={{
+                  mx: 1,
+                  borderRadius: 1,
+                  '&.Mui-selected': {
+                    backgroundColor: 'primary.light',
+                    color: 'primary.contrastText',
+                    '&:hover': {
+                      backgroundColor: 'primary.main',
+                    },
+                    '& .MuiListItemIcon-root': {
+                      color: 'primary.contrastText',
+                    },
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
+                <ListItemText primary={item.text} />
+              </ListItemButton>
+            </ListItem>
+          ))}
+          <Divider sx={{ my: 1 }} />
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ px: 2, py: 1, display: 'block' }}
+          >
+            Configuration
+          </Typography>
+          {configMenuItems.map((item) => (
             <ListItem key={item.text} disablePadding>
               <ListItemButton
                 selected={isSelected(item.path)}

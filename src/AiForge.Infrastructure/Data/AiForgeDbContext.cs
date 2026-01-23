@@ -27,6 +27,10 @@ public class AiForgeDbContext : DbContext
     public DbSet<TestLink> TestLinks => Set<TestLink>();
     public DbSet<TechnicalDebt> TechnicalDebts => Set<TechnicalDebt>();
     public DbSet<SessionMetrics> SessionMetrics => Set<SessionMetrics>();
+    public DbSet<Agent> Agents => Set<Agent>();
+    public DbSet<Skill> Skills => Set<Skill>();
+    public DbSet<PromptTemplate> PromptTemplates => Set<PromptTemplate>();
+    public DbSet<ConfigurationSet> ConfigurationSets => Set<ConfigurationSet>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

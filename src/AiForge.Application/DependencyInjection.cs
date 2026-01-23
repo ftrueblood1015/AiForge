@@ -33,6 +33,12 @@ public static class DependencyInjection
         // Analytics Services
         services.AddScoped<IAnalyticsService, AnalyticsService>();
 
+        // Configuration & Scope Services
+        services.AddScoped<IScopeResolver, ScopeResolver>();
+        services.AddScoped<IAgentService, AgentService>();
+        services.AddScoped<ISkillService, SkillService>();
+        services.AddScoped<IPromptTemplateService, PromptTemplateService>();
+
         return services;
     }
 }

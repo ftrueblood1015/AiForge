@@ -54,7 +54,33 @@
       "mcp__aiforge__get_hot_files",
       "mcp__aiforge__get_debt_backlog",
       "mcp__aiforge__get_recurring_issues",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "mcp__pulsiron__pulsiron_get_organization_by_name",
+      "mcp__pulsiron__pulsiron_get_project",
+      "mcp__pulsiron__pulsiron_whoami",
+      "mcp__pulsiron__pulsiron_list_projects",
+      "Bash(tree:*)",
+      "Bash(done)",
+      "mcp__pulsiron__pulsiron_create_handoff",
+      "mcp__pulsiron__pulsiron_get_features",
+      "mcp__pulsiron__pulsiron_create_feature",
+      "mcp__pulsiron__pulsiron_update_feature",
+      "mcp__pulsiron__pulsiron_create_agent",
+      "mcp__pulsiron__pulsiron_get_agents",
+      "mcp__pulsiron__pulsiron_create_chain_template",
+      "mcp__pulsiron__pulsiron_validate_chain_template",
+      "mcp__pulsiron__pulsiron_publish_chain_template",
+      "mcp__pulsiron__pulsiron_create_story",
+      "mcp__pulsiron__pulsiron_add_queue_item",
+      "mcp__pulsiron__pulsiron_update_story",
+      "mcp__pulsiron__pulsiron_update_queue_notes",
+      "mcp__pulsiron__pulsiron_get_story_by_number",
+      "mcp__pulsiron__pulsiron_checkout_queue",
+      "mcp__pulsiron__pulsiron_get_queue"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "pulsiron"
+  ]
 }

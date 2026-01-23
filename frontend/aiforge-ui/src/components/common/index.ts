@@ -7,3 +7,4 @@ export {
   DetailSkeleton,
   TableSkeleton,
 } from './LoadingState';
+export { default as ScopeSelector } from './ScopeSelector';

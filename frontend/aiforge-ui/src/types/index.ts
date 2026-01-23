@@ -8,6 +8,12 @@ export type PlanStatus = 'Draft' | 'Approved' | 'Superseded' | 'Rejected';
 export type ComplexityLevel = 'Low' | 'Medium' | 'High' | 'VeryHigh';
 export type EffortSize = 'XSmall' | 'Small' | 'Medium' | 'Large' | 'XLarge';
 
+// Agent & Skill Enums
+export type AgentType = 'Claude' | 'GPT' | 'Gemini' | 'Custom';
+export type AgentStatus = 'Idle' | 'Working' | 'Paused' | 'Disabled' | 'Error';
+export type SkillCategory = 'Workflow' | 'Analysis' | 'Documentation' | 'Generation' | 'Testing' | 'Custom';
+export type ConfigurationScope = 'Organization' | 'Project';
+
 // Core Entities
 export interface Project {
   id: string;
@@ -602,4 +608,207 @@ export interface RecentActivity {
   description: string;
   ticketKey: string | null;
   timestamp: string;
+}
+
+// ==========================================
+// Agent & Skill Configuration Types
+// ==========================================
+
+// Agent Entity
+export interface Agent {
+  id: string;
+  agentKey: string;
+  name: string;
+  description: string | null;
+  systemPrompt: string | null;
+  instructions: string | null;
+  agentType: AgentType;
+  capabilities: string[];
+  status: AgentStatus;
+  organizationId: string | null;
+  projectId: string | null;
+  scope: ConfigurationScope;
+  isEnabled: boolean;
+  createdAt: string;
+  createdBy: string;
+  updatedAt: string | null;
+  updatedBy: string | null;
+}
+
+export interface AgentListItem {
+  id: string;
+  agentKey: string;
+  name: string;
+  description: string | null;
+  agentType: AgentType;
+  status: AgentStatus;
+  scope: ConfigurationScope;
+  isEnabled: boolean;
+}
+
+// Skill Entity
+export interface Skill {
+  id: string;
+  skillKey: string;
+  name: string;
+  description: string | null;
+  content: string;
+  category: SkillCategory;
+  organizationId: string | null;
+  projectId: string | null;
+  scope: ConfigurationScope;
+  isPublished: boolean;
+  createdAt: string;
+  createdBy: string;
+  updatedAt: string | null;
+  updatedBy: string | null;
+}
+
+export interface SkillListItem {
+  id: string;
+  skillKey: string;
+  name: string;
+  description: string | null;
+  category: SkillCategory;
+  scope: ConfigurationScope;
+  isPublished: boolean;
+}
+
+// PromptTemplate Entity
+export interface PromptTemplate {
+  id: string;
+  templateKey: string;
+  name: string;
+  description: string | null;
+  template: string;
+  variables: string[];
+  category: string;
+  organizationId: string | null;
+  projectId: string | null;
+  scope: ConfigurationScope;
+  isPublished: boolean;
+  createdAt: string;
+  createdBy: string | null;
+  updatedAt: string | null;
+  updatedBy: string | null;
+}
+
+export interface PromptTemplateListItem {
+  id: string;
+  templateKey: string;
+  name: string;
+  description: string | null;
+  category: string;
+  variables: string[];
+  scope: ConfigurationScope;
+  isPublished: boolean;
+}
+
+// Agent API Request/Response Types
+export interface CreateAgentRequest {
+  agentKey: string;
+  name: string;
+  description?: string;
+  systemPrompt?: string;
+  instructions?: string;
+  agentType?: AgentType;
+  capabilities?: string[];
+  organizationId?: string;
+  projectId?: string;
+}
+
+export interface UpdateAgentRequest {
+  name?: string;
+  description?: string;
+  systemPrompt?: string;
+  instructions?: string;
+  agentType?: AgentType;
+  capabilities?: string[];
+  status?: AgentStatus;
+  isEnabled?: boolean;
+}
+
+export interface AgentListResponse {
+  items: AgentListItem[];
+  totalCount: number;
+}
+
+export interface AgentSearchParams {
+  organizationId?: string;
+  projectId?: string;
+  agentType?: AgentType;
+  status?: AgentStatus;
+  isEnabled?: boolean;
+}
+
+// Skill API Request/Response Types
+export interface CreateSkillRequest {
+  skillKey: string;
+  name: string;
+  description?: string;
+  content: string;
+  category?: SkillCategory;
+  organizationId?: string;
+  projectId?: string;
+}
+
+export interface UpdateSkillRequest {
+  name?: string;
+  description?: string;
+  content?: string;
+  category?: SkillCategory;
+  isPublished?: boolean;
+}
+
+export interface SkillListResponse {
+  items: SkillListItem[];
+  totalCount: number;
+}
+
+export interface SkillSearchParams {
+  organizationId?: string;
+  projectId?: string;
+  category?: SkillCategory;
+  isPublished?: boolean;
+}
+
+// PromptTemplate API Request/Response Types
+export interface CreatePromptTemplateRequest {
+  templateKey: string;
+  name: string;
+  description?: string;
+  template: string;
+  variables?: string[];
+  category: string;
+  organizationId?: string;
+  projectId?: string;
+}
+
+export interface UpdatePromptTemplateRequest {
+  name?: string;
+  description?: string;
+  template?: string;
+  variables?: string[];
+  category?: string;
+  isPublished?: boolean;
+}
+
+export interface RenderTemplateRequest {
+  variables: Record<string, string>;
+}
+
+export interface RenderTemplateResponse {
+  renderedContent: string;
+  missingVariables: string[];
+}
+
+export interface PromptTemplateListResponse {
+  items: PromptTemplateListItem[];
+  totalCount: number;
+}
+
+export interface PromptTemplateSearchParams {
+  organizationId?: string;
+  projectId?: string;
+  category?: string;
 }
