@@ -31,6 +31,8 @@ public class AiForgeDbContext : DbContext
     public DbSet<Skill> Skills => Set<Skill>();
     public DbSet<PromptTemplate> PromptTemplates => Set<PromptTemplate>();
     public DbSet<ConfigurationSet> ConfigurationSets => Set<ConfigurationSet>();
+    public DbSet<WorkQueue> WorkQueues => Set<WorkQueue>();
+    public DbSet<WorkQueueItem> WorkQueueItems => Set<WorkQueueItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

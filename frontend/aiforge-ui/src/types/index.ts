@@ -812,3 +812,147 @@ export interface PromptTemplateSearchParams {
   projectId?: string;
   category?: string;
 }
+
+// ==========================================
+// Work Queue Types
+// ==========================================
+
+// Work Queue Enums
+export type WorkQueueStatus = 'Active' | 'Paused' | 'Completed' | 'Archived';
+export type WorkQueueItemStatus = 'Pending' | 'InProgress' | 'Completed' | 'Skipped' | 'Blocked';
+export type WorkItemType = 'Task' | 'UserStory';
+
+// Context Helper
+export interface ContextHelper {
+  currentFocus: string;
+  keyDecisions: string[];
+  blockersResolved: string[];
+  nextSteps: string[];
+  lastUpdated: string;
+}
+
+// Work Queue Entities
+export interface WorkQueue {
+  id: string;
+  name: string;
+  description: string | null;
+  projectId: string;
+  projectName: string;
+  implementationPlanId: string | null;
+  implementationPlanTitle: string | null;
+  status: WorkQueueStatus;
+  checkedOutBy: string | null;
+  checkedOutAt: string | null;
+  checkoutExpiresAt: string | null;
+  itemCount: number;
+  createdAt: string;
+  createdBy: string | null;
+}
+
+export interface WorkQueueDetail extends WorkQueue {
+  context: ContextHelper;
+  items: WorkQueueItem[];
+}
+
+export interface WorkQueueItem {
+  id: string;
+  workItemId: string;
+  workItemType: WorkItemType;
+  workItemTitle: string;
+  position: number;
+  status: WorkQueueItemStatus;
+  notes: string | null;
+  addedAt: string;
+  addedBy: string | null;
+  completedAt: string | null;
+}
+
+// Tiered Context Response
+export interface TieredContextResponse {
+  tier: number;
+  estimatedTokens: number;
+  tier1: QueueContextTier1;
+  tier2: QueueContextTier2 | null;
+  tier3: QueueContextTier3 | null;
+  tier4: QueueContextTier4 | null;
+}
+
+export interface QueueContextTier1 {
+  queueName: string;
+  currentItemTitle: string | null;
+  totalItems: number;
+  completedItems: number;
+  context: ContextHelper;
+  isStale: boolean;
+  staleWarning: string | null;
+}
+
+export interface QueueContextTier2 {
+  implementationPlanTitle: string | null;
+  implementationPlanSummary: string | null;
+  planOutline: string[];
+}
+
+export interface QueueContextTier3 {
+  currentItem: WorkQueueItem | null;
+  itemDescription: string | null;
+  acceptanceCriteria: string[] | null;
+  nextItems: WorkQueueItem[];
+}
+
+export interface QueueContextTier4 {
+  recentFileSnapshots: FileSnapshotSummary[];
+  relatedFiles: string[];
+}
+
+export interface FileSnapshotSummary {
+  filePath: string;
+  changeType: string | null;
+  capturedAt: string;
+}
+
+// Work Queue Request DTOs
+export interface CreateWorkQueueRequest {
+  name: string;
+  description?: string;
+  implementationPlanId?: string;
+}
+
+export interface UpdateWorkQueueRequest {
+  name?: string;
+  description?: string;
+  status?: WorkQueueStatus;
+  implementationPlanId?: string;
+}
+
+export interface AddQueueItemRequest {
+  workItemId: string;
+  workItemType: WorkItemType;
+  position?: number;
+  notes?: string;
+}
+
+export interface UpdateQueueItemRequest {
+  position?: number;
+  status?: WorkQueueItemStatus;
+  notes?: string;
+}
+
+export interface ReorderItemsRequest {
+  itemIds: string[];
+}
+
+export interface CheckoutRequest {
+  durationMinutes?: number;
+}
+
+export interface UpdateContextRequest {
+  currentFocus?: string;
+  appendKeyDecisions?: string[];
+  appendBlockersResolved?: string[];
+  replaceNextSteps?: string[];
+}
+
+export interface WorkQueueSearchParams {
+  status?: WorkQueueStatus;
+}

@@ -24,6 +24,7 @@ import {
   ArrowBack as ArrowBackIcon,
   ViewKanban as KanbanIcon,
   ViewList as ListIcon,
+  Queue as QueueIcon,
 } from '@mui/icons-material';
 import { useProjectStore } from '../stores/projectStore';
 import { useTicketStore } from '../stores/ticketStore';
@@ -163,6 +164,13 @@ export default function ProjectDetail() {
               List
             </ToggleButton>
           </ToggleButtonGroup>
+          <Button
+            variant="outlined"
+            startIcon={<QueueIcon />}
+            onClick={() => navigate(`/projects/${currentProject.id}/queues`)}
+          >
+            Queues
+          </Button>
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => setDialogOpen(true)}>
             New Ticket
           </Button>

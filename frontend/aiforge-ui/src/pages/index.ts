@@ -6,3 +6,5 @@ export { default as TicketDetail } from './TicketDetail';
 export { default as HandoffList } from './HandoffList';
 export { default as HandoffDetail } from './HandoffDetail';
 export { default as Settings } from './Settings';
+export { default as QueueList } from './QueueList';
+export { default as QueueDetail } from './QueueDetail';

@@ -39,6 +39,9 @@ public static class DependencyInjection
         services.AddScoped<ISkillService, SkillService>();
         services.AddScoped<IPromptTemplateService, PromptTemplateService>();
 
+        // Work Queue Services
+        services.AddScoped<IWorkQueueService, WorkQueueService>();
+
         return services;
     }
 }

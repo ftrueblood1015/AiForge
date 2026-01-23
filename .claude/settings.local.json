@@ -76,7 +76,22 @@
       "mcp__pulsiron__pulsiron_update_queue_notes",
       "mcp__pulsiron__pulsiron_get_story_by_number",
       "mcp__pulsiron__pulsiron_checkout_queue",
-      "mcp__pulsiron__pulsiron_get_queue"
+      "mcp__pulsiron__pulsiron_get_queue",
+      "mcp__pulsiron__pulsiron_release_queue_checkout",
+      "mcp__pulsiron__pulsiron_get_chain_template",
+      "mcp__pulsiron__pulsiron_update_chain_template",
+      "mcp__pulsiron__pulsiron_get_workflow_guidance",
+      "mcp__pulsiron__pulsiron_get_queues",
+      "mcp__pulsiron__pulsiron_getting_started",
+      "mcp__pulsiron__pulsiron_create_prd",
+      "mcp__pulsiron__pulsiron_update_prd_section",
+      "mcp__pulsiron__pulsiron_create_handoff_section",
+      "mcp__pulsiron__pulsiron_attach_queue_documentation",
+      "mcp__pulsiron__pulsiron_get_handoff_section",
+      "mcp__pulsiron__pulsiron_get_handoff_toc",
+      "mcp__pulsiron__pulsiron_search_stories",
+      "mcp__pulsiron__pulsiron_get_queue_documentation",
+      "mcp__pulsiron__pulsiron_get_handoff"
     ]
   },
   "enableAllProjectMcpServers": true,
