@@ -180,7 +180,6 @@ export default function QueueDetail() {
   const progress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
 
   const isCheckedOut = !!currentQueue.checkedOutBy;
-  const isCheckedOutByMe = currentQueue.checkedOutBy === 'system'; // Simplified - would check actual user
 
   // Calculate staleness (24 hours)
   const lastUpdated = new Date(currentQueue.context.lastUpdated);

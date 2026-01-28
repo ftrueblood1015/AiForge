@@ -55,7 +55,8 @@ import { ImplementationPlanView } from '../components/plans';
 import { EstimationSection, EstimationHistoryTimeline } from '../components/estimation';
 import { CodeIntelligenceTab } from '../components/codeIntelligence';
 import { TicketAnalyticsTab } from '../components/analytics';
-import type { TicketType, TicketStatus, Priority, Comment } from '../types';
+import SubTicketList from '../components/tickets/SubTicketList';
+import type { TicketType, TicketStatus, Priority, Comment, TicketDetail as TicketDetailType } from '../types';
 
 const typeIcons: Record<TicketType, React.ReactNode> = {
   Task: <AssignmentIcon color="action" fontSize="large" />,
@@ -160,6 +161,23 @@ export default function TicketDetail() {
       setSubmittingComment(false);
     }
   };
+
+  const handleSubTicketCreated = () => {
+    // Refresh ticket to get updated sub-ticket list
+    if (key) fetchTicket(key);
+  };
+
+  const handleSubTicketDeleted = async (id: string) => {
+    try {
+      await ticketsApi.delete(id);
+      if (key) fetchTicket(key);
+    } catch (err) {
+      console.error('Failed to delete sub-ticket:', err);
+    }
+  };
+
+  // Cast to TicketDetailType for sub-ticket properties
+  const ticketDetail = currentTicket as TicketDetailType;
 
   if (error) {
     return (
@@ -276,6 +294,19 @@ export default function TicketDetail() {
 
               {/* Tab Panels */}
               <TabPanel value={activeTab} index={0}>
+                {/* Parent Ticket Link */}
+                {ticketDetail.parentTicket && (
+                  <Alert severity="info" sx={{ mb: 2 }}>
+                    This is a sub-ticket of{' '}
+                    <Link
+                      component="button"
+                      onClick={() => navigate(`/tickets/${ticketDetail.parentTicket!.key}`)}
+                    >
+                      {ticketDetail.parentTicket.key}: {ticketDetail.parentTicket.title}
+                    </Link>
+                  </Alert>
+                )}
+
                 {/* Description */}
                 <Typography variant="h6" gutterBottom>
                   Description
@@ -288,6 +319,26 @@ export default function TicketDetail() {
                   <Typography variant="body1" color="text.secondary">
                     No description provided.
                   </Typography>
+                )}
+
+                {/* Sub-tickets Section (only show for top-level tickets) */}
+                {!currentTicket.parentTicketId && (
+                  <Box sx={{ my: 3 }}>
+                    <SubTicketList
+                      parentTicketId={currentTicket.id}
+                      subTickets={ticketDetail.subTickets || []}
+                      subTicketCount={ticketDetail.subTicketCount || 0}
+                      completedSubTicketCount={ticketDetail.completedSubTicketCount || 0}
+                      subTicketProgress={ticketDetail.subTicketProgress || 0}
+                      onSubTicketCreated={handleSubTicketCreated}
+                      onSubTicketDeleted={handleSubTicketDeleted}
+                      onNavigate={(id) => {
+                        // Find the sub-ticket key and navigate
+                        const subTicket = ticketDetail.subTickets?.find(st => st.id === id);
+                        if (subTicket) navigate(`/tickets/${subTicket.key}`);
+                      }}
+                    />
+                  </Box>
                 )}
 
                 <Divider sx={{ my: 3 }} />

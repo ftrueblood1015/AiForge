@@ -44,15 +44,73 @@ Implement the plan for ticket: **$ARGUMENTS**
 
 ## Instructions
 
-1. **Retrieve the approved plan:**
-   - Use `get_implementation_plan` to fetch the current approved plan for the ticket
+### Phase 0: Setup Work Queue (REQUIRED)
+
+Before implementing, set up a work queue to track progress:
+
+1. **Retrieve the ticket and approved plan:**
+   ```
+   get_ticket(ticketKeyOrId: "<ticket>")
+   get_implementation_plan(ticketKeyOrId: "<ticket>")
+   ```
+   - Note the ticket's `projectId` and `projectKey`
+   - Note the implementation plan's `Id`
    - If no approved plan exists, stop and inform the user
 
-2. **Start a planning session:**
+2. **Create a work queue for this implementation:**
+   ```
+   aiforge_create_queue(
+     projectKeyOrId: "<project-key>",
+     name: "<ticket-key> Implementation",
+     description: "Implementation queue for <ticket-key>: <ticket-title>",
+     implementationPlanId: "<plan-id>"
+   )
+   ```
+   - Save the returned `queueId` for subsequent operations
+
+3. **Add the main ticket to the queue:**
+   ```
+   aiforge_add_queue_item(
+     queueId: "<queue-id>",
+     ticketKeyOrId: "<ticket-key>",
+     position: 1,
+     notes: "Main ticket: <ticket-title>"
+   )
+   ```
+
+4. **Add any sub-tickets to the queue (if they exist):**
+   - Use `list_sub_tickets(parentTicketKeyOrId: "<ticket-key>")` to get sub-tickets
+   - For each sub-ticket, add to the queue in order:
+     ```
+     aiforge_add_queue_item(
+       queueId: "<queue-id>",
+       ticketKeyOrId: "<sub-ticket-key>",
+       position: <next-position>,
+       notes: "Sub-ticket: <sub-ticket-title>"
+     )
+     ```
+
+5. **Checkout the queue to begin work:**
+   ```
+   aiforge_checkout_queue(queueId: "<queue-id>")
+   ```
+
+6. **Set initial context:**
+   ```
+   aiforge_update_context(
+     queueId: "<queue-id>",
+     currentFocus: "Phase 1: <first-phase-name>",
+     nextSteps: ["Complete Phase 1", "Phase 2: <second-phase>", "..."]
+   )
+   ```
+
+### Phase 1: Begin Implementation
+
+1. **Start a planning session:**
    - Use `start_planning` to document your understanding of the implementation
    - Use `log_session_metrics` to begin tracking this session
 
-3. **Execute each phase:**
+2. **Execute each phase:**
    For each phase in the plan:
    - Log progress with `log_progress` before starting
    - Implement the code changes
@@ -105,6 +163,20 @@ Use these MCP tools throughout:
 - `log_file_change` - For each file created/modified
 - `create_handoff` - At session end or milestones
 
+### Queue Context Updates
+
+Update the queue context when transitioning between phases:
+```
+aiforge_update_context(
+  queueId: "<queue-id>",
+  currentFocus: "Phase N: <current-phase-name>",
+  keyDecisions: ["Decision made during this phase"],
+  nextSteps: ["Remaining phases..."]
+)
+```
+
+This ensures that if the session is interrupted, the next session can resume with full context.
+
 ## Error Handling
 
 If you encounter issues:
@@ -132,16 +204,42 @@ When all phases are complete:
      notes: "Implementation complete - all phases finished"
    )
    ```
-6. Transition ticket to InReview with `transition_ticket`
+6. **Mark queue items as completed:**
+   ```
+   aiforge_advance_queue_item(
+     queueId: "<queue-id>",
+     itemId: "<current-item-id>",
+     completionNotes: "Implementation complete"
+   )
+   ```
+7. **Update queue context with completion status:**
+   ```
+   aiforge_update_context(
+     queueId: "<queue-id>",
+     currentFocus: "Implementation complete",
+     nextSteps: ["Review and testing", "Merge to main"]
+   )
+   ```
+8. **Release the queue:**
+   ```
+   aiforge_release_queue(queueId: "<queue-id>")
+   ```
+9. Transition ticket to InReview with `transition_ticket`
 
 ## Final Analytics Checklist
 
 Before completing, ensure you have:
+- [ ] Work queue created with `aiforge_create_queue`
+- [ ] Ticket(s) added to queue with `aiforge_add_queue_item`
+- [ ] Queue checked out with `aiforge_checkout_queue`
 - [ ] Session metrics logged at start with `log_session_metrics`
 - [ ] All decisions logged with `log_decision` (with confidence levels)
 - [ ] All progress entries logged with `log_progress`
 - [ ] All file changes logged with `log_file_change`
+- [ ] Queue context updated after each phase with `aiforge_update_context`
 - [ ] Actual effort recorded with `record_actual_effort`
 - [ ] Session metrics updated with final duration and counts
 - [ ] Handoff created with session summary including token estimates
+- [ ] Queue items marked complete with `aiforge_advance_queue_item`
+- [ ] Queue released with `aiforge_release_queue`
 - [ ] Ticket transitioned to appropriate status

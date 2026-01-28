@@ -22,6 +22,12 @@ public interface ITicketRepository
     Task<Ticket> AddAsync(Ticket ticket, CancellationToken cancellationToken = default);
     Task UpdateAsync(Ticket ticket, CancellationToken cancellationToken = default);
     Task DeleteAsync(Ticket ticket, CancellationToken cancellationToken = default);
+
+    // Sub-ticket operations
+    Task<IEnumerable<Ticket>> GetSubTicketsAsync(Guid parentTicketId, CancellationToken cancellationToken = default);
+    Task<bool> HasCircularReferenceAsync(Guid ticketId, Guid proposedParentId, CancellationToken cancellationToken = default);
+    Task<int> GetNestingDepthAsync(Guid ticketId, CancellationToken cancellationToken = default);
+    Task<int> GetNextTicketNumberAsync(Guid projectId, CancellationToken cancellationToken = default);
 }
 
 public class TicketRepository : Repository<Ticket>, ITicketRepository
@@ -89,5 +95,77 @@ public class TicketRepository : Repository<Ticket>, ITicketRepository
             .Include(t => t.Project)
             .OrderByDescending(t => t.UpdatedAt)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IEnumerable<Ticket>> GetSubTicketsAsync(Guid parentTicketId, CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .Where(t => t.ParentTicketId == parentTicketId)
+            .OrderBy(t => t.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<bool> HasCircularReferenceAsync(Guid ticketId, Guid proposedParentId, CancellationToken cancellationToken = default)
+    {
+        // A ticket cannot be its own parent
+        if (ticketId == proposedParentId)
+            return true;
+
+        // Check if proposedParent is a descendant of ticketId (would create cycle)
+        var currentId = proposedParentId;
+        var visited = new HashSet<Guid> { ticketId };
+
+        while (currentId != Guid.Empty)
+        {
+            if (visited.Contains(currentId))
+                return true;
+
+            visited.Add(currentId);
+
+            var ticket = await _dbSet
+                .AsNoTracking()
+                .Where(t => t.Id == currentId)
+                .Select(t => t.ParentTicketId)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (ticket == null)
+                break;
+
+            currentId = ticket.Value;
+        }
+
+        return false;
+    }
+
+    public async Task<int> GetNestingDepthAsync(Guid ticketId, CancellationToken cancellationToken = default)
+    {
+        var depth = 0;
+        var currentId = ticketId;
+
+        while (currentId != Guid.Empty)
+        {
+            var parentId = await _dbSet
+                .AsNoTracking()
+                .Where(t => t.Id == currentId)
+                .Select(t => t.ParentTicketId)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (parentId == null)
+                break;
+
+            depth++;
+            currentId = parentId.Value;
+        }
+
+        return depth;
+    }
+
+    public async Task<int> GetNextTicketNumberAsync(Guid projectId, CancellationToken cancellationToken = default)
+    {
+        var maxNumber = await _dbSet
+            .Where(t => t.ProjectId == projectId)
+            .MaxAsync(t => (int?)t.Number, cancellationToken) ?? 0;
+
+        return maxNumber + 1;
     }
 }

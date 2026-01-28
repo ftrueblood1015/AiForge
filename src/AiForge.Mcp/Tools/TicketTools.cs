@@ -287,4 +287,143 @@ public class TicketTools
         }
     }
 
+    // Sub-ticket operations
+
+    [McpServerTool(Name = "create_sub_ticket"), Description("Create a sub-ticket under a parent ticket for breaking down work")]
+    public async Task<string> CreateSubTicket(
+        [Description("Parent ticket key (e.g., DEMO-1) or ID")] string parentTicketKeyOrId,
+        [Description("Sub-ticket title")] string title,
+        [Description("Sub-ticket description (optional)")] string? description = null,
+        [Description("Type: Task, Bug, Feature, Enhancement (default: Task)")] string type = "Task",
+        [Description("Priority: Low, Medium, High, Critical (default: Medium)")] string priority = "Medium",
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Resolve parent ticket
+            var parentTicket = await ResolveTicketAsync(parentTicketKeyOrId, cancellationToken);
+            if (parentTicket == null)
+                return JsonSerializer.Serialize(new { error = $"Parent ticket '{parentTicketKeyOrId}' not found" });
+
+            var request = new CreateSubTicketRequest
+            {
+                Title = title,
+                Description = description,
+                Type = Enum.Parse<TicketType>(type, true),
+                Priority = Enum.Parse<Priority>(priority, true)
+            };
+
+            var ticket = await _ticketService.CreateSubTicketAsync(parentTicket.Id, request, cancellationToken);
+
+            return JsonSerializer.Serialize(new
+            {
+                success = true,
+                Id = ticket.Id,
+                Key = ticket.Key,
+                Title = ticket.Title,
+                ParentKey = parentTicket.Key,
+                Status = ticket.Status.ToString(),
+                Type = ticket.Type.ToString(),
+                Priority = ticket.Priority.ToString(),
+                message = $"Sub-ticket {ticket.Key} created under {parentTicket.Key}"
+            }, JsonOptions);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return JsonSerializer.Serialize(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return JsonSerializer.Serialize(new { error = ex.Message });
+        }
+    }
+
+    [McpServerTool(Name = "list_sub_tickets"), Description("List all sub-tickets for a parent ticket")]
+    public async Task<string> ListSubTickets(
+        [Description("Parent ticket key (e.g., DEMO-1) or ID")] string parentTicketKeyOrId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var parentTicket = await ResolveTicketAsync(parentTicketKeyOrId, cancellationToken);
+            if (parentTicket == null)
+                return JsonSerializer.Serialize(new { error = $"Ticket '{parentTicketKeyOrId}' not found" });
+
+            var subTickets = await _ticketService.GetSubTicketsAsync(parentTicket.Id, cancellationToken);
+
+            return JsonSerializer.Serialize(new
+            {
+                parentKey = parentTicket.Key,
+                parentTitle = parentTicket.Title,
+                subTicketCount = subTickets.Count(),
+                subTickets = subTickets.Select(st => new
+                {
+                    st.Id,
+                    st.Key,
+                    st.Title,
+                    Status = st.Status.ToString(),
+                    Type = st.Type.ToString(),
+                    Priority = st.Priority.ToString()
+                })
+            }, JsonOptions);
+        }
+        catch (Exception ex)
+        {
+            return JsonSerializer.Serialize(new { error = ex.Message });
+        }
+    }
+
+    [McpServerTool(Name = "move_ticket"), Description("Move a ticket to a different parent or promote to top-level")]
+    public async Task<string> MoveTicket(
+        [Description("Ticket key (e.g., DEMO-1) or ID to move")] string ticketKeyOrId,
+        [Description("New parent ticket key or ID (omit or null to promote to top-level)")] string? newParentKeyOrId = null,
+        [Description("Who made the change (e.g., session ID)")] string? changedBy = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var ticket = await ResolveTicketAsync(ticketKeyOrId, cancellationToken);
+            if (ticket == null)
+                return JsonSerializer.Serialize(new { error = $"Ticket '{ticketKeyOrId}' not found" });
+
+            Guid? newParentId = null;
+            if (!string.IsNullOrEmpty(newParentKeyOrId))
+            {
+                var newParent = await ResolveTicketAsync(newParentKeyOrId, cancellationToken);
+                if (newParent == null)
+                    return JsonSerializer.Serialize(new { error = $"New parent ticket '{newParentKeyOrId}' not found" });
+                newParentId = newParent.Id;
+            }
+
+            var request = new MoveSubTicketRequest { NewParentTicketId = newParentId };
+            var result = await _ticketService.MoveTicketAsync(ticket.Id, request, changedBy, cancellationToken);
+
+            return JsonSerializer.Serialize(new
+            {
+                success = true,
+                ticketKey = result!.Key,
+                newParentId = newParentId,
+                message = newParentId.HasValue
+                    ? $"Ticket {result.Key} moved under new parent"
+                    : $"Ticket {result.Key} promoted to top-level"
+            }, JsonOptions);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return JsonSerializer.Serialize(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return JsonSerializer.Serialize(new { error = ex.Message });
+        }
+    }
+
+    // Helper method to resolve ticket by key or ID
+    private async Task<TicketDetailDto?> ResolveTicketAsync(string keyOrId, CancellationToken ct)
+    {
+        if (Guid.TryParse(keyOrId, out var id))
+            return await _ticketService.GetByIdAsync(id, ct);
+
+        return await _ticketService.GetByKeyAsync(keyOrId.ToUpperInvariant(), ct);
+    }
 }

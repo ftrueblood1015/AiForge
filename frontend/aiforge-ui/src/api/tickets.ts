@@ -1,5 +1,16 @@
 import client from './client';
-import type { Ticket, CreateTicketRequest, UpdateTicketRequest, TransitionTicketRequest, TicketSearchParams, Comment, TicketHistory } from '../types';
+import type {
+  Ticket,
+  CreateTicketRequest,
+  UpdateTicketRequest,
+  TransitionTicketRequest,
+  TicketSearchParams,
+  Comment,
+  TicketHistory,
+  SubTicketSummary,
+  CreateSubTicketRequest,
+  MoveSubTicketRequest
+} from '../types';
 
 export const ticketsApi = {
   search: async (params: TicketSearchParams): Promise<Ticket[]> => {
@@ -53,6 +64,22 @@ export const ticketsApi = {
   // History
   getHistory: async (ticketId: string): Promise<TicketHistory[]> => {
     const response = await client.get<TicketHistory[]>(`/api/tickets/${ticketId}/history`);
+    return response.data;
+  },
+
+  // Sub-ticket operations
+  getSubTickets: async (parentTicketId: string): Promise<SubTicketSummary[]> => {
+    const response = await client.get<SubTicketSummary[]>(`/api/tickets/${parentTicketId}/subtasks`);
+    return response.data;
+  },
+
+  createSubTicket: async (parentTicketId: string, request: CreateSubTicketRequest): Promise<Ticket> => {
+    const response = await client.post<Ticket>(`/api/tickets/${parentTicketId}/subtasks`, request);
+    return response.data;
+  },
+
+  moveTicket: async (ticketId: string, request: MoveSubTicketRequest): Promise<Ticket> => {
+    const response = await client.patch<Ticket>(`/api/tickets/${ticketId}/move`, request);
     return response.data;
   },
 };

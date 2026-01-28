@@ -23,11 +23,21 @@ public class MappingProfile : Profile
 
         // Ticket mappings
         CreateMap<Ticket, TicketDto>()
-            .ForMember(dest => dest.ProjectKey, opt => opt.MapFrom(src => src.Project.Key));
+            .ForMember(dest => dest.ProjectKey, opt => opt.MapFrom(src => src.Project.Key))
+            .ForMember(dest => dest.SubTicketCount, opt => opt.MapFrom(src => src.SubTickets.Count));
+
+        CreateMap<Ticket, SubTicketSummaryDto>();
 
         CreateMap<Ticket, TicketDetailDto>()
             .ForMember(dest => dest.ProjectKey, opt => opt.MapFrom(src => src.Project.Key))
             .ForMember(dest => dest.SubTickets, opt => opt.MapFrom(src => src.SubTickets))
+            .ForMember(dest => dest.SubTicketCount, opt => opt.MapFrom(src => src.SubTickets.Count))
+            .ForMember(dest => dest.CompletedSubTicketCount, opt => opt.MapFrom(src =>
+                src.SubTickets.Count(st => st.Status == Domain.Enums.TicketStatus.Done)))
+            .ForMember(dest => dest.SubTicketProgress, opt => opt.MapFrom(src =>
+                src.SubTickets.Count == 0 ? 0m :
+                (decimal)src.SubTickets.Count(st => st.Status == Domain.Enums.TicketStatus.Done) / src.SubTickets.Count * 100))
+            .ForMember(dest => dest.ParentTicket, opt => opt.MapFrom(src => src.ParentTicket))
             .ForMember(dest => dest.CommentCount, opt => opt.MapFrom(src => src.Comments.Count));
 
         CreateMap<CreateTicketRequest, Ticket>()

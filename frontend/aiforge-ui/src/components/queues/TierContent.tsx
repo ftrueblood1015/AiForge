@@ -11,7 +11,6 @@ import {
   ListItemText,
   ListItemIcon,
   Chip,
-  Divider,
   Alert,
 } from '@mui/material';
 import {
@@ -25,7 +24,7 @@ import {
   Code as FileIcon,
   Warning as WarningIcon,
 } from '@mui/icons-material';
-import type { TieredContextResponse, WorkQueueItem } from '../../types';
+import type { TieredContextResponse } from '../../types';
 
 interface TierContentProps {
   data: TieredContextResponse;

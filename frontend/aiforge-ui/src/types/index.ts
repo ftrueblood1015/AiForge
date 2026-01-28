@@ -28,6 +28,7 @@ export interface Project {
 export interface Ticket {
   id: string;
   projectId: string;
+  projectKey: string;
   key: string;
   number: number;
   title: string;
@@ -37,11 +38,31 @@ export interface Ticket {
   priority: Priority;
   parentTicketId: string | null;
   currentHandoffSummary: string | null;
+  subTicketCount: number;
   createdAt: string;
   updatedAt: string;
   project?: Project;
-  subTickets?: Ticket[];
+  subTickets?: SubTicketSummary[];
   comments?: Comment[];
+}
+
+export interface SubTicketSummary {
+  id: string;
+  key: string;
+  title: string;
+  status: TicketStatus;
+  type: TicketType;
+  priority: Priority;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TicketDetail extends Ticket {
+  subTickets: SubTicketSummary[];
+  completedSubTicketCount: number;
+  subTicketProgress: number;
+  parentTicket: SubTicketSummary | null;
+  commentCount: number;
 }
 
 export interface Comment {
@@ -182,6 +203,17 @@ export interface UpdateTicketRequest {
 export interface TransitionTicketRequest {
   status: TicketStatus;
   comment?: string;
+}
+
+export interface CreateSubTicketRequest {
+  title: string;
+  description?: string;
+  type?: TicketType;
+  priority?: Priority;
+}
+
+export interface MoveSubTicketRequest {
+  newParentTicketId?: string | null;
 }
 
 export interface TicketSearchParams {

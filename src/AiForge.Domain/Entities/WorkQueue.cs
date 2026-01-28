@@ -14,7 +14,7 @@ public class WorkQueue
     public Project Project { get; set; } = null!;
 
     public Guid? ImplementationPlanId { get; set; }
-    public HandoffDocument? ImplementationPlan { get; set; }
+    public ImplementationPlan? ImplementationPlan { get; set; }
 
     // Status
     public WorkQueueStatus Status { get; set; } = WorkQueueStatus.Active;

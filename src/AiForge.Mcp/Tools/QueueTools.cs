@@ -13,9 +13,152 @@ public class QueueTools
     private readonly IWorkQueueService _queueService;
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
-    public QueueTools(IWorkQueueService queueService)
+    private readonly IProjectService _projectService;
+    private readonly ITicketService _ticketService;
+
+    public QueueTools(IWorkQueueService queueService, IProjectService projectService, ITicketService ticketService)
     {
         _queueService = queueService;
+        _projectService = projectService;
+        _ticketService = ticketService;
+    }
+
+    [McpServerTool(Name = "aiforge_create_queue"), Description("Create a new work queue for a project. Use this to set up focused work sessions with tickets and implementation plans.")]
+    public async Task<string> CreateQueue(
+        [Description("Project key (e.g., AIFORGE) or project ID")] string projectKeyOrId,
+        [Description("Queue name (e.g., 'AIFORGE-19 Implementation')")] string name,
+        [Description("Queue description (optional)")] string? description = null,
+        [Description("Implementation plan ID to link (optional, GUID)")] string? implementationPlanId = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Resolve project
+            var project = await ResolveProjectAsync(projectKeyOrId, cancellationToken);
+            if (project == null)
+                return JsonSerializer.Serialize(new { error = $"Project '{projectKeyOrId}' not found" });
+
+            Guid? planId = null;
+            if (!string.IsNullOrEmpty(implementationPlanId) && Guid.TryParse(implementationPlanId, out var parsedPlanId))
+                planId = parsedPlanId;
+
+            var request = new CreateWorkQueueRequest
+            {
+                Name = name,
+                Description = description,
+                ImplementationPlanId = planId
+            };
+
+            var queue = await _queueService.CreateAsync(project.Id, request, "mcp-client", cancellationToken);
+
+            return JsonSerializer.Serialize(new
+            {
+                success = true,
+                queueId = queue.Id,
+                queueName = queue.Name,
+                projectId = queue.ProjectId,
+                projectName = queue.ProjectName,
+                implementationPlanId = queue.ImplementationPlanId,
+                message = $"Queue '{queue.Name}' created successfully"
+            }, JsonOptions);
+        }
+        catch (Exception ex)
+        {
+            return JsonSerializer.Serialize(new { error = ex.Message });
+        }
+    }
+
+    [McpServerTool(Name = "aiforge_add_queue_item"), Description("Add a ticket to a work queue. Items are processed in position order.")]
+    public async Task<string> AddQueueItem(
+        [Description("Queue ID (GUID)")] string queueId,
+        [Description("Ticket key (e.g., DEMO-1) or ticket ID to add")] string ticketKeyOrId,
+        [Description("Position in queue (optional, defaults to end)")] int? position = null,
+        [Description("Notes about this item (optional)")] string? notes = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (!Guid.TryParse(queueId, out var qId))
+                return JsonSerializer.Serialize(new { error = "Invalid queue ID format" });
+
+            // Resolve ticket
+            var ticket = await ResolveTicketAsync(ticketKeyOrId, cancellationToken);
+            if (ticket == null)
+                return JsonSerializer.Serialize(new { error = $"Ticket '{ticketKeyOrId}' not found" });
+
+            var request = new AddQueueItemRequest
+            {
+                WorkItemId = ticket.Id,
+                WorkItemType = WorkItemType.Task,
+                Position = position,
+                Notes = notes ?? $"{ticket.Key}: {ticket.Title}"
+            };
+
+            var item = await _queueService.AddItemAsync(qId, request, "mcp-client", cancellationToken);
+            if (item == null)
+                return JsonSerializer.Serialize(new { error = "Queue not found" });
+
+            return JsonSerializer.Serialize(new
+            {
+                success = true,
+                itemId = item.Id,
+                ticketKey = ticket.Key,
+                ticketTitle = ticket.Title,
+                position = item.Position,
+                message = $"Ticket {ticket.Key} added to queue at position {item.Position}"
+            }, JsonOptions);
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("already exists"))
+        {
+            return JsonSerializer.Serialize(new { error = "Ticket already exists in queue" });
+        }
+        catch (Exception ex)
+        {
+            return JsonSerializer.Serialize(new { error = ex.Message });
+        }
+    }
+
+    [McpServerTool(Name = "aiforge_list_queues"), Description("List work queues for a project.")]
+    public async Task<string> ListQueues(
+        [Description("Project key (e.g., AIFORGE) or project ID")] string projectKeyOrId,
+        [Description("Filter by status: Active, Paused, Completed, Archived (optional)")] string? status = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var project = await ResolveProjectAsync(projectKeyOrId, cancellationToken);
+            if (project == null)
+                return JsonSerializer.Serialize(new { error = $"Project '{projectKeyOrId}' not found" });
+
+            WorkQueueStatus? statusFilter = null;
+            if (!string.IsNullOrEmpty(status) && Enum.TryParse<WorkQueueStatus>(status, true, out var parsed))
+                statusFilter = parsed;
+
+            var queues = await _queueService.GetByProjectAsync(project.Id, statusFilter, cancellationToken);
+
+            return JsonSerializer.Serialize(new
+            {
+                projectKey = project.Key,
+                projectName = project.Name,
+                queueCount = queues.Count,
+                queues = queues.Select(q => new
+                {
+                    q.Id,
+                    q.Name,
+                    q.Description,
+                    status = q.Status.ToString(),
+                    q.ItemCount,
+                    q.CheckedOutBy,
+                    q.ImplementationPlanId,
+                    q.ImplementationPlanTitle,
+                    q.CreatedAt
+                })
+            }, JsonOptions);
+        }
+        catch (Exception ex)
+        {
+            return JsonSerializer.Serialize(new { error = ex.Message });
+        }
     }
 
     [McpServerTool(Name = "aiforge_checkout_queue"), Description("Checkout a work queue for focused work. Returns Tier 1 context with current focus, decisions, and next steps. Use this at the start of a work session.")]
@@ -258,5 +401,22 @@ public class QueueTools
         {
             return JsonSerializer.Serialize(new { error = ex.Message });
         }
+    }
+
+    // Helper methods
+    private async Task<Application.DTOs.Projects.ProjectDto?> ResolveProjectAsync(string keyOrId, CancellationToken ct)
+    {
+        if (Guid.TryParse(keyOrId, out var id))
+            return await _projectService.GetByIdAsync(id, ct);
+
+        return await _projectService.GetByKeyAsync(keyOrId.ToUpperInvariant(), ct);
+    }
+
+    private async Task<Application.DTOs.Tickets.TicketDto?> ResolveTicketAsync(string keyOrId, CancellationToken ct)
+    {
+        if (Guid.TryParse(keyOrId, out var id))
+            return await _ticketService.GetByIdAsync(id, ct);
+
+        return await _ticketService.GetByKeyAsync(keyOrId.ToUpperInvariant(), ct);
     }
 }

@@ -80,7 +80,15 @@ public class WorkQueueService(AiForgeDbContext db, ILogger<WorkQueueService> log
             ImplementationPlanId = request.ImplementationPlanId,
             Status = WorkQueueStatus.Active,
             CreatedAt = DateTime.UtcNow,
-            CreatedBy = createdBy
+            CreatedBy = createdBy,
+            Context = new Domain.ValueObjects.ContextHelper
+            {
+                CurrentFocus = string.Empty,
+                KeyDecisions = [],
+                BlockersResolved = [],
+                NextSteps = [],
+                LastUpdated = DateTime.UtcNow
+            }
         };
 
         db.WorkQueues.Add(queue);
@@ -375,8 +383,8 @@ public class WorkQueueService(AiForgeDbContext db, ILogger<WorkQueueService> log
         {
             response.Tier2 = new QueueContextTier2
             {
-                ImplementationPlanTitle = queue.ImplementationPlan.Title,
-                ImplementationPlanSummary = queue.ImplementationPlan.Summary,
+                ImplementationPlanTitle = ExtractPlanTitle(queue.ImplementationPlan.Content),
+                ImplementationPlanSummary = ExtractPlanSummary(queue.ImplementationPlan.Content),
                 PlanOutline = ExtractPlanOutline(queue.ImplementationPlan.Content)
             };
         }
@@ -418,6 +426,34 @@ public class WorkQueueService(AiForgeDbContext db, ILogger<WorkQueueService> log
         return response;
     }
 
+    private static string? ExtractPlanTitle(string? content)
+    {
+        if (string.IsNullOrEmpty(content)) return null;
+
+        // Find first H1 header (# Title)
+        var lines = content.Split('\n');
+        var h1 = lines.FirstOrDefault(l => l.TrimStart().StartsWith("# "));
+        return h1?.TrimStart('#', ' ').Trim();
+    }
+
+    private static string? ExtractPlanSummary(string? content)
+    {
+        if (string.IsNullOrEmpty(content)) return null;
+
+        // Extract first non-empty, non-header paragraph
+        var lines = content.Split('\n');
+        foreach (var line in lines)
+        {
+            var trimmed = line.Trim();
+            if (!string.IsNullOrEmpty(trimmed) && !trimmed.StartsWith('#'))
+            {
+                // Return first 200 chars of first paragraph
+                return trimmed.Length > 200 ? trimmed[..200] + "..." : trimmed;
+            }
+        }
+        return null;
+    }
+
     private static List<string> ExtractPlanOutline(string? content)
     {
         if (string.IsNullOrEmpty(content)) return [];
@@ -447,7 +483,7 @@ public class WorkQueueService(AiForgeDbContext db, ILogger<WorkQueueService> log
         ProjectId = queue.ProjectId,
         ProjectName = queue.Project?.Name ?? string.Empty,
         ImplementationPlanId = queue.ImplementationPlanId,
-        ImplementationPlanTitle = queue.ImplementationPlan?.Title,
+        ImplementationPlanTitle = ExtractPlanTitle(queue.ImplementationPlan?.Content),
         Status = queue.Status,
         CheckedOutBy = queue.CheckedOutBy,
         CheckedOutAt = queue.CheckedOutAt,
@@ -465,7 +501,7 @@ public class WorkQueueService(AiForgeDbContext db, ILogger<WorkQueueService> log
         ProjectId = queue.ProjectId,
         ProjectName = queue.Project?.Name ?? string.Empty,
         ImplementationPlanId = queue.ImplementationPlanId,
-        ImplementationPlanTitle = queue.ImplementationPlan?.Title,
+        ImplementationPlanTitle = ExtractPlanTitle(queue.ImplementationPlan?.Content),
         Status = queue.Status,
         CheckedOutBy = queue.CheckedOutBy,
         CheckedOutAt = queue.CheckedOutAt,

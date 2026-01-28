@@ -51,7 +51,7 @@ public class WorkQueueConfiguration : IEntityTypeConfiguration<WorkQueue>
         builder.HasOne(q => q.ImplementationPlan)
             .WithMany()
             .HasForeignKey(q => q.ImplementationPlanId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Restrict);
 
         // Indexes
         builder.HasIndex(q => q.ProjectId);

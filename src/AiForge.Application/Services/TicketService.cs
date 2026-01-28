@@ -16,6 +16,12 @@ public interface ITicketService
     Task<TicketDto?> UpdateAsync(Guid id, UpdateTicketRequest request, string? changedBy = null, CancellationToken cancellationToken = default);
     Task<TicketDto?> TransitionAsync(Guid id, TransitionTicketRequest request, string? changedBy = null, CancellationToken cancellationToken = default);
     Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+
+    // Sub-ticket operations
+    Task<IEnumerable<SubTicketSummaryDto>> GetSubTicketsAsync(Guid parentTicketId, CancellationToken cancellationToken = default);
+    Task<TicketDto> CreateSubTicketAsync(Guid parentTicketId, CreateSubTicketRequest request, CancellationToken cancellationToken = default);
+    Task<TicketDto?> MoveTicketAsync(Guid ticketId, MoveSubTicketRequest request, string? changedBy = null, CancellationToken cancellationToken = default);
+    Task<bool> CanBeParentAsync(Guid ticketId, Guid proposedParentId, CancellationToken cancellationToken = default);
 }
 
 public class TicketService : ITicketService
@@ -199,5 +205,106 @@ public class TicketService : ITicketService
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return true;
+    }
+
+    // Sub-ticket operations
+
+    public async Task<IEnumerable<SubTicketSummaryDto>> GetSubTicketsAsync(Guid parentTicketId, CancellationToken cancellationToken = default)
+    {
+        var subTickets = await _ticketRepository.GetSubTicketsAsync(parentTicketId, cancellationToken);
+        return _mapper.Map<IEnumerable<SubTicketSummaryDto>>(subTickets);
+    }
+
+    public async Task<TicketDto> CreateSubTicketAsync(Guid parentTicketId, CreateSubTicketRequest request, CancellationToken cancellationToken = default)
+    {
+        var parent = await _ticketRepository.GetByIdAsync(parentTicketId, cancellationToken)
+            ?? throw new InvalidOperationException($"Parent ticket {parentTicketId} not found");
+
+        // Check nesting depth (max 2 levels - parent -> child, no grandchildren)
+        if (parent.ParentTicketId.HasValue)
+            throw new InvalidOperationException("Cannot create sub-ticket of a sub-ticket (max depth is 2)");
+
+        // Get project for ticket key
+        var project = await _projectRepository.GetByIdAsync(parent.ProjectId, cancellationToken)
+            ?? throw new InvalidOperationException($"Project {parent.ProjectId} not found");
+
+        var ticketNumber = await _ticketRepository.GetNextTicketNumberAsync(parent.ProjectId, cancellationToken);
+
+        var ticket = new Ticket
+        {
+            Id = Guid.NewGuid(),
+            ProjectId = parent.ProjectId,
+            ParentTicketId = parentTicketId,
+            Number = ticketNumber,
+            Key = $"{project.Key}-{ticketNumber}",
+            Title = request.Title,
+            Description = request.Description,
+            Type = request.Type,
+            Priority = request.Priority,
+            Status = TicketStatus.ToDo,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        // Update project's next ticket number
+        await _projectRepository.GetAndIncrementNextTicketNumberAsync(parent.ProjectId, cancellationToken);
+
+        await _ticketRepository.AddAsync(ticket, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Reload with project info
+        ticket.Project = project;
+        return _mapper.Map<TicketDto>(ticket);
+    }
+
+    public async Task<TicketDto?> MoveTicketAsync(Guid ticketId, MoveSubTicketRequest request, string? changedBy = null, CancellationToken cancellationToken = default)
+    {
+        var ticket = await _ticketRepository.GetByIdAsync(ticketId, cancellationToken);
+        if (ticket == null)
+            return null;
+
+        if (request.NewParentTicketId.HasValue)
+        {
+            // Validate no circular reference and depth limit
+            if (!await CanBeParentAsync(ticketId, request.NewParentTicketId.Value, cancellationToken))
+                throw new InvalidOperationException("Invalid parent: would create circular reference or exceed depth limit");
+        }
+
+        var oldParentId = ticket.ParentTicketId;
+        ticket.ParentTicketId = request.NewParentTicketId;
+        ticket.UpdatedAt = DateTime.UtcNow;
+
+        // Record history
+        await _historyRepository.AddAsync(new TicketHistory
+        {
+            Id = Guid.NewGuid(),
+            TicketId = ticket.Id,
+            Field = "ParentTicketId",
+            OldValue = oldParentId?.ToString(),
+            NewValue = request.NewParentTicketId?.ToString(),
+            ChangedBy = changedBy,
+            ChangedAt = DateTime.UtcNow
+        }, cancellationToken);
+
+        await _ticketRepository.UpdateAsync(ticket, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        var updatedTicket = await _ticketRepository.GetByKeyAsync(ticket.Key, cancellationToken);
+        return _mapper.Map<TicketDto>(updatedTicket);
+    }
+
+    public async Task<bool> CanBeParentAsync(Guid ticketId, Guid proposedParentId, CancellationToken cancellationToken = default)
+    {
+        // Cannot be own parent
+        if (ticketId == proposedParentId)
+            return false;
+
+        // Check proposed parent isn't already a sub-ticket (max depth = 2)
+        var proposedParent = await _ticketRepository.GetByIdAsync(proposedParentId, cancellationToken);
+        if (proposedParent?.ParentTicketId.HasValue == true)
+            return false;
+
+        // Check for circular reference
+        return !await _ticketRepository.HasCircularReferenceAsync(ticketId, proposedParentId, cancellationToken);
     }
 }

@@ -91,7 +91,16 @@
       "mcp__pulsiron__pulsiron_get_handoff_toc",
       "mcp__pulsiron__pulsiron_search_stories",
       "mcp__pulsiron__pulsiron_get_queue_documentation",
-      "mcp__pulsiron__pulsiron_get_handoff"
+      "mcp__pulsiron__pulsiron_get_handoff",
+      "mcp__pulsiron__pulsiron_get_feature",
+      "mcp__pulsiron__pulsiron_get_stories_by_feature",
+      "mcp__pulsiron__pulsiron_create_chain_from_template",
+      "mcp__aiforge__aiforge_create_queue",
+      "mcp__aiforge__aiforge_list_queues",
+      "Bash(dotnet ef migrations list:*)",
+      "mcp__aiforge__aiforge_add_queue_item",
+      "mcp__aiforge__aiforge_checkout_queue",
+      "mcp__aiforge__aiforge_update_context"
     ]
   },
   "enableAllProjectMcpServers": true,

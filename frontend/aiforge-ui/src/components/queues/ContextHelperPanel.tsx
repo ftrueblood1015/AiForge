@@ -15,7 +15,6 @@ import {
   ListItemIcon,
   Chip,
   Alert,
-  Button,
   TextField,
   CircularProgress,
   Tooltip,
@@ -76,6 +75,18 @@ export default function ContextHelperPanel({
     setIsEditing(false);
   }, []);
 
+  // Calculate estimated size for warning (moved before useEffect that uses isOverLimit)
+  const estimatedContext = {
+    currentFocus: editedFocus,
+    keyDecisions: newDecision ? [...context.keyDecisions, newDecision] : context.keyDecisions,
+    blockersResolved: newBlocker ? [...context.blockersResolved, newBlocker] : context.blockersResolved,
+    nextSteps: editedNextSteps.split('\n').filter((s) => s.trim()),
+  };
+  const currentSize = estimateByteSize(estimatedContext);
+  const sizePercent = (currentSize / MAX_SIZE_BYTES) * 100;
+  const isOverLimit = currentSize > MAX_SIZE_BYTES;
+  const isNearLimit = currentSize > WARNING_SIZE_BYTES;
+
   const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
@@ -127,18 +138,6 @@ export default function ContextHelperPanel({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isEditing, isOverLimit, isSaving, handleCancel, handleSave]);
-
-  // Calculate estimated size for warning
-  const estimatedContext = {
-    currentFocus: editedFocus,
-    keyDecisions: newDecision ? [...context.keyDecisions, newDecision] : context.keyDecisions,
-    blockersResolved: newBlocker ? [...context.blockersResolved, newBlocker] : context.blockersResolved,
-    nextSteps: editedNextSteps.split('\n').filter((s) => s.trim()),
-  };
-  const currentSize = estimateByteSize(estimatedContext);
-  const sizePercent = (currentSize / MAX_SIZE_BYTES) * 100;
-  const isOverLimit = currentSize > MAX_SIZE_BYTES;
-  const isNearLimit = currentSize > WARNING_SIZE_BYTES;
 
   return (
     <Card>

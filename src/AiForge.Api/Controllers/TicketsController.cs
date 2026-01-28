@@ -162,4 +162,68 @@ public class TicketsController : ControllerBase
         var history = await _historyService.GetByTicketIdAsync(id, cancellationToken);
         return Ok(history);
     }
+
+    /// <summary>
+    /// Move a ticket to a different parent (or promote to top-level)
+    /// </summary>
+    [HttpPatch("{id:guid}/move")]
+    [ProducesResponseType(typeof(TicketDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<TicketDto>> MoveTicket(
+        Guid id,
+        [FromBody] MoveSubTicketRequest request,
+        [FromQuery] string? changedBy,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _ticketService.MoveTicketAsync(id, request, changedBy, cancellationToken);
+            if (result == null)
+                return NotFound(new { error = $"Ticket with ID '{id}' not found" });
+
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get all sub-tickets for a parent ticket
+    /// </summary>
+    [HttpGet("{id:guid}/subtasks")]
+    [ProducesResponseType(typeof(IEnumerable<SubTicketSummaryDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<SubTicketSummaryDto>>> GetSubTickets(Guid id, CancellationToken cancellationToken)
+    {
+        var subTickets = await _ticketService.GetSubTicketsAsync(id, cancellationToken);
+        return Ok(subTickets);
+    }
+
+    /// <summary>
+    /// Create a new sub-ticket under a parent ticket
+    /// </summary>
+    [HttpPost("{id:guid}/subtasks")]
+    [ProducesResponseType(typeof(TicketDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<TicketDto>> CreateSubTicket(
+        Guid id,
+        [FromBody] CreateSubTicketRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.Title))
+            return BadRequest(new { error = "Title is required" });
+
+        try
+        {
+            var ticket = await _ticketService.CreateSubTicketAsync(id, request, cancellationToken);
+            return CreatedAtAction(nameof(GetById), new { id = ticket.Id }, ticket);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+    }
 }

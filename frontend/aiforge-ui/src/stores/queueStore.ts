@@ -3,7 +3,6 @@ import type {
   WorkQueue,
   WorkQueueDetail,
   WorkQueueItem,
-  ContextHelper,
   TieredContextResponse,
   WorkQueueStatus,
   WorkQueueItemStatus,
