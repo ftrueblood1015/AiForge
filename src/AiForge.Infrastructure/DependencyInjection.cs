@@ -43,6 +43,9 @@ public static class DependencyInjection
         // Analytics Repositories
         services.AddScoped<ISessionMetricsRepository, SessionMetricsRepository>();
 
+        // Session State Repository
+        services.AddScoped<ISessionStateRepository, SessionStateRepository>();
+
         return services;
     }
 }

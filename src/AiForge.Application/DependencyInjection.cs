@@ -21,6 +21,7 @@ public static class DependencyInjection
         services.AddScoped<IPlanningService, PlanningService>();
         services.AddScoped<IHandoffService, HandoffService>();
         services.AddScoped<IAiContextService, AiContextService>();
+        services.AddScoped<ISessionStateService, SessionStateService>();
         services.AddScoped<ISearchService, SearchService>();
         services.AddScoped<IImplementationPlanService, ImplementationPlanService>();
         services.AddScoped<IEffortEstimationService, EffortEstimationService>();

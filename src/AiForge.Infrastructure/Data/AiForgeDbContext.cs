@@ -37,6 +37,7 @@ public class AiForgeDbContext : DbContext
     public DbSet<SkillChainLink> SkillChainLinks => Set<SkillChainLink>();
     public DbSet<SkillChainExecution> SkillChainExecutions => Set<SkillChainExecution>();
     public DbSet<SkillChainLinkExecution> SkillChainLinkExecutions => Set<SkillChainLinkExecution>();
+    public DbSet<SessionState> SessionStates => Set<SessionState>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
