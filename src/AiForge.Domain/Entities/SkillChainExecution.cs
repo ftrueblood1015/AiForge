@@ -29,4 +29,5 @@ public class SkillChainExecution
     public Ticket? Ticket { get; set; }
     public SkillChainLink? CurrentLink { get; set; }
     public ICollection<SkillChainLinkExecution> LinkExecutions { get; set; } = new List<SkillChainLinkExecution>();
+    public ICollection<ExecutionCheckpoint> Checkpoints { get; set; } = [];
 }

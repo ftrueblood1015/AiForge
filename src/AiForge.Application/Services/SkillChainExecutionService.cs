@@ -26,6 +26,9 @@ public interface ISkillChainExecutionService
     // Human intervention
     Task<IEnumerable<SkillChainExecutionSummaryDto>> GetPendingInterventionsAsync(Guid? projectId, CancellationToken ct = default);
     Task<SkillChainExecutionDto?> ResolveInterventionAsync(Guid executionId, ResolveInterventionRequest request, CancellationToken ct = default);
+
+    // Checkpoints
+    Task<ExecutionCheckpointDto?> GetLatestCheckpointAsync(Guid executionId, CancellationToken ct = default);
 }
 
 public class SkillChainExecutionService : ISkillChainExecutionService
@@ -229,6 +232,8 @@ public class SkillChainExecutionService : ISkillChainExecutionService
     {
         var execution = await _context.SkillChainExecutions
             .Include(e => e.CurrentLink)
+            .Include(e => e.Checkpoints)
+                .ThenInclude(c => c.Link)
             .FirstOrDefaultAsync(e => e.Id == executionId, ct);
 
         if (execution == null) return null;
@@ -240,16 +245,73 @@ public class SkillChainExecutionService : ISkillChainExecutionService
         execution.RequiresHumanIntervention = false;
         execution.InterventionReason = null;
 
+        // Load checkpoint context if available
+        var latestCheckpoint = execution.Checkpoints
+            .OrderByDescending(c => c.Position)
+            .FirstOrDefault();
+
+        if (latestCheckpoint != null)
+        {
+            // Merge checkpoint data into execution context
+            var currentContext = string.IsNullOrEmpty(execution.ExecutionContext)
+                ? new Dictionary<string, object>()
+                : JsonSerializer.Deserialize<Dictionary<string, object>>(execution.ExecutionContext, JsonOptions) ?? new Dictionary<string, object>();
+
+            currentContext["resumedFromCheckpoint"] = new
+            {
+                checkpointId = latestCheckpoint.Id.ToString(),
+                checkpointPosition = latestCheckpoint.Position,
+                checkpointLinkName = latestCheckpoint.Link?.Name,
+                checkpointData = latestCheckpoint.CheckpointData
+            };
+
+            execution.ExecutionContext = JsonSerializer.Serialize(currentContext, JsonOptions);
+        }
+
         // Merge additional context if provided
         if (!string.IsNullOrEmpty(request.AdditionalContext))
         {
-            // In production, properly merge JSON
-            execution.ExecutionContext = request.AdditionalContext;
+            var currentContext = string.IsNullOrEmpty(execution.ExecutionContext)
+                ? new Dictionary<string, object>()
+                : JsonSerializer.Deserialize<Dictionary<string, object>>(execution.ExecutionContext, JsonOptions) ?? new Dictionary<string, object>();
+
+            var additionalData = JsonSerializer.Deserialize<Dictionary<string, object>>(request.AdditionalContext, JsonOptions);
+            if (additionalData != null)
+            {
+                foreach (var kvp in additionalData)
+                    currentContext[kvp.Key] = kvp.Value;
+            }
+
+            execution.ExecutionContext = JsonSerializer.Serialize(currentContext, JsonOptions);
         }
 
         await _unitOfWork.SaveChangesAsync(ct);
 
         return await GetExecutionAsync(executionId, ct);
+    }
+
+    public async Task<ExecutionCheckpointDto?> GetLatestCheckpointAsync(Guid executionId, CancellationToken ct = default)
+    {
+        var checkpoint = await _context.ExecutionCheckpoints
+            .AsNoTracking()
+            .Include(c => c.Link)
+            .Where(c => c.ExecutionId == executionId)
+            .OrderByDescending(c => c.Position)
+            .FirstOrDefaultAsync(ct);
+
+        if (checkpoint == null)
+            return null;
+
+        return new ExecutionCheckpointDto
+        {
+            Id = checkpoint.Id,
+            ExecutionId = checkpoint.ExecutionId,
+            LinkId = checkpoint.LinkId,
+            LinkName = checkpoint.Link?.Name,
+            Position = checkpoint.Position,
+            CheckpointData = checkpoint.CheckpointData,
+            CreatedAt = checkpoint.CreatedAt
+        };
     }
 
     public async Task<SkillChainExecutionDto?> CancelExecutionAsync(Guid executionId, string reason, string cancelledBy, CancellationToken ct = default)
@@ -340,6 +402,12 @@ public class SkillChainExecutionService : ISkillChainExecutionService
         }
 
         await _unitOfWork.SaveChangesAsync(ct);
+
+        // Save execution checkpoint on success
+        if (outcome == LinkExecutionOutcome.Success && currentLinkExec.SkillChainLink != null)
+        {
+            await SaveCheckpointAsync(execution, currentLinkExec.SkillChainLink, request.Output, ct);
+        }
 
         // Save session state after recording outcome
         var config = GetSessionStateConfig(execution);
@@ -713,6 +781,91 @@ public class SkillChainExecutionService : ISkillChainExecutionService
             ExecutedBy = linkExec.ExecutedBy
         };
     }
+
+    #region Checkpoint Methods
+
+    /// <summary>
+    /// Saves a checkpoint after successful link completion.
+    /// </summary>
+    private async Task SaveCheckpointAsync(
+        SkillChainExecution execution,
+        SkillChainLink link,
+        string? output,
+        CancellationToken ct)
+    {
+        var checkpoint = new ExecutionCheckpoint
+        {
+            Id = Guid.NewGuid(),
+            ExecutionId = execution.Id,
+            LinkId = link.Id,
+            Position = link.Position,
+            CheckpointData = BuildCheckpointData(link.Name, output),
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.ExecutionCheckpoints.Add(checkpoint);
+        await _context.SaveChangesAsync(ct);
+    }
+
+    /// <summary>
+    /// Builds checkpoint data by extracting key fields based on link type.
+    /// </summary>
+    private static string BuildCheckpointData(string? linkName, string? output)
+    {
+        if (string.IsNullOrEmpty(output))
+            return "{}";
+
+        try
+        {
+            using var outputDoc = JsonDocument.Parse(output);
+            var root = outputDoc.RootElement;
+
+            // Extract fields based on link type
+            var checkpointFields = new Dictionary<string, object?>();
+            var normalizedName = linkName?.ToLowerInvariant() ?? "";
+
+            string[] fieldsToExtract = normalizedName switch
+            {
+                var n when n.Contains("research") => ["ticketKey", "affectedAreas", "researchSummary"],
+                var n when n.Contains("plan") => ["planId", "estimatedEffort", "keyDecisions"],
+                var n when n.Contains("review") => ["approved", "feedbackSummary"],
+                var n when n.Contains("implement") => ["filesChanged", "completedItems"],
+                var n when n.Contains("organize") => ["queueId", "subTickets", "subTicketCount"],
+                var n when n.Contains("finalize") => ["handoffId", "summary"],
+                _ => ["summary", "outcome"]
+            };
+
+            foreach (var field in fieldsToExtract)
+            {
+                if (root.TryGetProperty(field, out var value))
+                {
+                    checkpointFields[field] = value.ValueKind switch
+                    {
+                        JsonValueKind.String => value.GetString(),
+                        JsonValueKind.Number => value.TryGetInt32(out var i) ? i : value.GetDouble(),
+                        JsonValueKind.True => true,
+                        JsonValueKind.False => false,
+                        JsonValueKind.Array => JsonSerializer.Deserialize<object[]>(value.GetRawText()),
+                        JsonValueKind.Object => JsonSerializer.Deserialize<Dictionary<string, object>>(value.GetRawText()),
+                        _ => null
+                    };
+                }
+            }
+
+            // Always include link name for context
+            checkpointFields["linkName"] = linkName;
+
+            return JsonSerializer.Serialize(checkpointFields, JsonOptions);
+        }
+        catch
+        {
+            // Fallback: truncate raw output
+            var truncated = output.Length > 500 ? output[..500] : output;
+            return JsonSerializer.Serialize(new { linkName, raw = truncated }, JsonOptions);
+        }
+    }
+
+    #endregion
 
     #region Session State Helpers
 

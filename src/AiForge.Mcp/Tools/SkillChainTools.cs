@@ -577,6 +577,46 @@ public class SkillChainTools
         }
     }
 
+    [McpServerTool(Name = "get_execution_checkpoint"), Description("Get the latest checkpoint for a chain execution")]
+    public async Task<string> GetExecutionCheckpoint(
+        [Description("Execution ID (GUID)")] string executionId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var id = Guid.Parse(executionId);
+            var checkpoint = await _executionService.GetLatestCheckpointAsync(id, cancellationToken);
+
+            if (checkpoint == null)
+            {
+                return JsonSerializer.Serialize(new
+                {
+                    success = true,
+                    hasCheckpoint = false,
+                    message = "No checkpoints found for this execution"
+                }, JsonOptions);
+            }
+
+            return JsonSerializer.Serialize(new
+            {
+                success = true,
+                hasCheckpoint = true,
+                checkpoint = new
+                {
+                    checkpoint.Id,
+                    checkpoint.LinkName,
+                    checkpoint.Position,
+                    checkpoint.CheckpointData,
+                    checkpoint.CreatedAt
+                }
+            }, JsonOptions);
+        }
+        catch (Exception ex)
+        {
+            return JsonSerializer.Serialize(new { error = ex.Message });
+        }
+    }
+
     [McpServerTool(Name = "list_chain_executions"), Description("List chain executions with optional filters")]
     public async Task<string> ListChainExecutions(
         [Description("Skill chain ID (GUID) to filter by")] string? chainId = null,
@@ -759,6 +799,10 @@ public class SkillChainTools
             if (execution == null)
                 return JsonSerializer.Serialize(new { error = $"Execution '{executionId}' not found" });
 
+            // Get latest checkpoint for the response
+            var checkpoint = await _executionService.GetLatestCheckpointAsync(id, cancellationToken);
+            var hasCheckpoint = checkpoint != null;
+
             return JsonSerializer.Serialize(new
             {
                 success = true,
@@ -769,7 +813,15 @@ public class SkillChainTools
                     execution.CurrentLinkName,
                     execution.RequiresHumanIntervention
                 },
-                message = $"Execution resumed - continuing at '{execution.CurrentLinkName}'"
+                checkpoint = hasCheckpoint ? new
+                {
+                    position = checkpoint!.Position,
+                    linkName = checkpoint.LinkName,
+                    data = checkpoint.CheckpointData
+                } : null,
+                message = hasCheckpoint
+                    ? $"Resumed from checkpoint at '{checkpoint!.LinkName}' - continuing at '{execution.CurrentLinkName}'"
+                    : $"Execution resumed - continuing at '{execution.CurrentLinkName}'"
             }, JsonOptions);
         }
         catch (Exception ex)
