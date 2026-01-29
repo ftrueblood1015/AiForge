@@ -12,12 +12,14 @@ public class PlanningTools
 {
     private readonly IPlanningService _planningService;
     private readonly ITicketService _ticketService;
+    private readonly ISummaryService _summaryService;
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
-    public PlanningTools(IPlanningService planningService, ITicketService ticketService)
+    public PlanningTools(IPlanningService planningService, ITicketService ticketService, ISummaryService summaryService)
     {
         _planningService = planningService;
         _ticketService = ticketService;
+        _summaryService = summaryService;
     }
 
     [McpServerTool(Name = "start_planning"), Description("Start a planning session for a ticket to document initial understanding and assumptions")]
@@ -199,6 +201,8 @@ public class PlanningTools
     public async Task<string> GetPlanningData(
         [Description("Ticket key (e.g., DEMO-1) or ID")] string ticketKeyOrId,
         [Description("Return compact response (counts and recent items only)")] bool compact = false,
+        [Description("Return full history of all entries (default: false returns summary + recent items)")] bool fullHistory = false,
+        [Description("Number of recent items to include in summary response (default: 5)")] int recentCount = 5,
         CancellationToken cancellationToken = default)
     {
         try
@@ -207,10 +211,49 @@ public class PlanningTools
             if (ticketId == null)
                 return JsonSerializer.Serialize(new { error = $"Ticket '{ticketKeyOrId}' not found" });
 
-            var data = await _planningService.GetPlanningDataByTicketIdAsync(ticketId.Value, cancellationToken);
+            // Full history mode - return all entries (original behavior)
+            if (fullHistory)
+            {
+                var data = await _planningService.GetPlanningDataByTicketIdAsync(ticketId.Value, cancellationToken);
+                return JsonSerializer.Serialize(new
+                {
+                    sessions = data.Sessions.Select(s => new
+                    {
+                        s.Id,
+                        s.InitialUnderstanding,
+                        s.Assumptions,
+                        s.ChosenApproach,
+                        s.Rationale,
+                        s.IsCompleted,
+                        s.CreatedAt,
+                        s.CompletedAt
+                    }),
+                    reasoningLogs = data.ReasoningLogs.Select(r => new
+                    {
+                        r.Id,
+                        r.DecisionPoint,
+                        r.OptionsConsidered,
+                        r.ChosenOption,
+                        r.Rationale,
+                        r.ConfidencePercent,
+                        r.CreatedAt
+                    }),
+                    progressEntries = data.ProgressEntries.Select(p => new
+                    {
+                        p.Id,
+                        p.Content,
+                        Outcome = p.Outcome.ToString(),
+                        p.FilesAffected,
+                        p.ErrorDetails,
+                        p.CreatedAt
+                    })
+                }, JsonOptions);
+            }
 
+            // Compact mode - counts and minimal recent items (backwards compatibility)
             if (compact)
             {
+                var data = await _planningService.GetPlanningDataByTicketIdAsync(ticketId.Value, cancellationToken);
                 var latestSession = data.Sessions.OrderByDescending(s => s.CreatedAt).FirstOrDefault();
                 var recentDecisions = data.ReasoningLogs.OrderByDescending(r => r.CreatedAt).Take(3);
                 var recentProgress = data.ProgressEntries.OrderByDescending(p => p.CreatedAt).Take(3);
@@ -242,38 +285,44 @@ public class PlanningTools
                 }, JsonOptions);
             }
 
+            // Default: Summary mode - summaries + recent items (token-optimized)
+            var summary = await _summaryService.GetPlanningDataSummaryAsync(ticketId.Value, recentCount, cancellationToken);
             return JsonSerializer.Serialize(new
             {
-                sessions = data.Sessions.Select(s => new
+                summary = new
                 {
-                    s.Id,
-                    s.InitialUnderstanding,
-                    s.Assumptions,
-                    s.ChosenApproach,
-                    s.Rationale,
-                    s.IsCompleted,
-                    s.CreatedAt,
-                    s.CompletedAt
-                }),
-                reasoningLogs = data.ReasoningLogs.Select(r => new
+                    summary.ProgressSummary,
+                    summary.DecisionSummary,
+                    summary.OutcomeStatistics,
+                    summary.TotalProgressEntries,
+                    summary.TotalReasoningLogs,
+                    summary.TotalSessions,
+                    summary.SummaryUpdatedAt
+                },
+                lastEntry = summary.LastProgressEntry == null ? null : new
                 {
-                    r.Id,
-                    r.DecisionPoint,
-                    r.OptionsConsidered,
-                    r.ChosenOption,
-                    r.Rationale,
-                    r.ConfidencePercent,
-                    r.CreatedAt
-                }),
-                progressEntries = data.ProgressEntries.Select(p => new
+                    summary.LastProgressEntry.Id,
+                    summary.LastProgressEntry.Content,
+                    Outcome = summary.LastProgressEntry.Outcome.ToString(),
+                    summary.LastProgressEntry.CreatedAt
+                },
+                recentProgress = summary.RecentProgress.Select(p => new
                 {
                     p.Id,
                     p.Content,
                     Outcome = p.Outcome.ToString(),
                     p.FilesAffected,
-                    p.ErrorDetails,
                     p.CreatedAt
-                })
+                }),
+                recentDecisions = summary.RecentDecisions.Select(r => new
+                {
+                    r.Id,
+                    r.DecisionPoint,
+                    r.ChosenOption,
+                    r.ConfidencePercent,
+                    r.CreatedAt
+                }),
+                fullHistoryAvailable = summary.FullHistoryAvailable
             }, JsonOptions);
         }
         catch (Exception ex)

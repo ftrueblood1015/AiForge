@@ -43,6 +43,7 @@ public class PlanningService : IPlanningService
     private readonly ITicketRepository _ticketRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly ISummaryService _summaryService;
 
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
@@ -52,7 +53,8 @@ public class PlanningService : IPlanningService
         IProgressEntryRepository progressRepository,
         ITicketRepository ticketRepository,
         IUnitOfWork unitOfWork,
-        IMapper mapper)
+        IMapper mapper,
+        ISummaryService summaryService)
     {
         _sessionRepository = sessionRepository;
         _reasoningRepository = reasoningRepository;
@@ -60,6 +62,7 @@ public class PlanningService : IPlanningService
         _ticketRepository = ticketRepository;
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _summaryService = summaryService;
     }
 
     #region Planning Sessions
@@ -185,6 +188,9 @@ public class PlanningService : IPlanningService
         await _reasoningRepository.AddAsync(log, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        // Update ticket decision summary
+        await _summaryService.UpdateDecisionSummaryAsync(request.TicketId, cancellationToken);
+
         return MapReasoningLogToDto(log);
     }
 
@@ -234,6 +240,9 @@ public class PlanningService : IPlanningService
 
         await _progressRepository.AddAsync(entry, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Update ticket progress summary
+        await _summaryService.UpdateProgressSummaryAsync(request.TicketId, cancellationToken);
 
         return MapProgressEntryToDto(entry);
     }

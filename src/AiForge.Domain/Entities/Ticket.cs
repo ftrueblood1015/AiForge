@@ -15,6 +15,13 @@ public class Ticket
     public Priority Priority { get; set; }
     public Guid? ParentTicketId { get; set; }                    // For sub-tasks
     public string? CurrentHandoffSummary { get; set; }           // Quick context
+
+    // Auto-generated summaries for efficient context retrieval
+    public string? ProgressSummary { get; set; }                   // Summary of progress entries
+    public string? DecisionSummary { get; set; }                   // Summary of decisions made
+    public string? OutcomeStatistics { get; set; }                 // JSON: {"Success":5,"Failure":1,...}
+    public DateTime? SummaryUpdatedAt { get; set; }                // Last summary update timestamp
+
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 

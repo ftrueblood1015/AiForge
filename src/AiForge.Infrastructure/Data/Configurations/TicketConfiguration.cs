@@ -24,6 +24,16 @@ public class TicketConfiguration : IEntityTypeConfiguration<Ticket>
         builder.Property(t => t.CurrentHandoffSummary)
             .HasMaxLength(2000);
 
+        // Summary fields for efficient context retrieval
+        builder.Property(t => t.ProgressSummary)
+            .HasMaxLength(1000);
+
+        builder.Property(t => t.DecisionSummary)
+            .HasMaxLength(1000);
+
+        builder.Property(t => t.OutcomeStatistics)
+            .HasMaxLength(500);
+
         builder.HasIndex(t => t.Key)
             .IsUnique();
 

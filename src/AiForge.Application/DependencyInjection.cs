@@ -19,6 +19,7 @@ public static class DependencyInjection
 
         // AI Feature Services
         services.AddScoped<IPlanningService, PlanningService>();
+        services.AddScoped<ISummaryService, SummaryService>();
         services.AddScoped<IHandoffService, HandoffService>();
         services.AddScoped<IAiContextService, AiContextService>();
         services.AddScoped<ISessionStateService, SessionStateService>();

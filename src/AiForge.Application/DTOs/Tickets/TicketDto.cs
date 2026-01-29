@@ -16,6 +16,13 @@ public class TicketDto
     public Priority Priority { get; set; }
     public Guid? ParentTicketId { get; set; }
     public string? CurrentHandoffSummary { get; set; }
+
+    // Auto-generated summaries
+    public string? ProgressSummary { get; set; }
+    public string? DecisionSummary { get; set; }
+    public string? OutcomeStatistics { get; set; }
+    public DateTime? SummaryUpdatedAt { get; set; }
+
     public int SubTicketCount { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
