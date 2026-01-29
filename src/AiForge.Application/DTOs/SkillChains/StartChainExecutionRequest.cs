@@ -6,6 +6,12 @@ public class StartChainExecutionRequest
     public Guid? TicketId { get; set; }
     public string? InputValues { get; set; }  // JSON object matching InputSchema
     public string? StartedBy { get; set; }
+
+    /// <summary>
+    /// Options for automatic session state management during execution.
+    /// If null, defaults to ChainSessionStateOptions.Default (all auto behaviors enabled).
+    /// </summary>
+    public ChainSessionStateOptions? SessionStateOptions { get; set; }
 }
 
 public class RecordLinkOutcomeRequest

@@ -22,6 +22,12 @@ public class SkillChainExecutionDto
     public string? StartedBy { get; set; }
     public string? CompletedBy { get; set; }
     public List<SkillChainLinkExecutionDto> LinkExecutions { get; set; } = new();
+
+    // Session state integration
+    public string? SessionId { get; set; }
+    public bool SessionStateEnabled { get; set; }
+    public string? SessionPhase { get; set; }
+    public DateTime? SessionStateUpdatedAt { get; set; }
 }
 
 public class SkillChainExecutionSummaryDto
