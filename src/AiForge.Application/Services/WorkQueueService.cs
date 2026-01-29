@@ -407,13 +407,48 @@ public class WorkQueueService(AiForgeDbContext db, ILogger<WorkQueueService> log
             };
         }
 
-        // Tier 4: File snapshots (placeholder - would need to query related snapshots)
+        // Tier 4: File snapshots and related files from queue items
         if (tier >= 4)
         {
+            // Get ticket IDs from non-completed queue items
+            var ticketIds = queue.Items
+                .Where(i => i.Status != WorkQueueItemStatus.Completed)
+                .Select(i => i.WorkItemId)
+                .ToList();
+
+            var recentSnapshots = new List<FileSnapshotSummary>();
+            var relatedFiles = new List<string>();
+
+            if (ticketIds.Count > 0)
+            {
+                // Get recent file snapshots from handoffs for these tickets
+                recentSnapshots = await db.FileSnapshots
+                    .Where(fs => ticketIds.Contains(fs.Handoff.TicketId))
+                    .OrderByDescending(fs => fs.CreatedAt)
+                    .Take(20)
+                    .Select(fs => new FileSnapshotSummary
+                    {
+                        FilePath = fs.FilePath,
+                        ChangeType = fs.ContentBefore == null ? "Created"
+                                   : fs.ContentAfter == null ? "Deleted"
+                                   : "Modified",
+                        CapturedAt = fs.CreatedAt
+                    })
+                    .ToListAsync(ct);
+
+                // Get related files from file change audit log
+                relatedFiles = await db.FileChanges
+                    .Where(fc => ticketIds.Contains(fc.TicketId))
+                    .Select(fc => fc.FilePath)
+                    .Distinct()
+                    .Take(50)
+                    .ToListAsync(ct);
+            }
+
             response.Tier4 = new QueueContextTier4
             {
-                RecentFileSnapshots = [],
-                RelatedFiles = []
+                RecentFileSnapshots = recentSnapshots,
+                RelatedFiles = relatedFiles
             };
         }
 
