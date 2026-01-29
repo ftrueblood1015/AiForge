@@ -29,6 +29,7 @@ public class HandoffTools
     [McpServerTool(Name = "get_context"), Description("Get full context for resuming work on a ticket (ticket details, latest handoff, recent planning data)")]
     public async Task<string> GetContext(
         [Description("Ticket key (e.g., DEMO-1) or ID")] string ticketKeyOrId,
+        [Description("Return compact response (minimal fields only)")] bool compact = false,
         CancellationToken cancellationToken = default)
     {
         try
@@ -40,6 +41,30 @@ public class HandoffTools
             var context = await _contextService.GetContextByTicketIdAsync(ticketId.Value, cancellationToken);
             if (context == null)
                 return JsonSerializer.Serialize(new { error = $"Context not found for ticket '{ticketKeyOrId}'" });
+
+            if (compact)
+            {
+                return JsonSerializer.Serialize(new
+                {
+                    ticket = new
+                    {
+                        context.Ticket.Key,
+                        context.Ticket.Title,
+                        Status = context.Ticket.Status.ToString(),
+                        Priority = context.Ticket.Priority.ToString()
+                    },
+                    latestHandoff = context.LatestHandoff == null ? null : new
+                    {
+                        context.LatestHandoff.Id,
+                        context.LatestHandoff.Title,
+                        Type = context.LatestHandoff.Type.ToString(),
+                        context.LatestHandoff.Summary
+                    },
+                    recentReasoningCount = context.RecentReasoning.Count(),
+                    recentProgressCount = context.RecentProgress.Count(),
+                    hasActivePlanningSession = context.ActivePlanningSession != null
+                }, JsonOptions);
+            }
 
             return JsonSerializer.Serialize(new
             {

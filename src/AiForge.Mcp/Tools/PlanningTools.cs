@@ -198,6 +198,7 @@ public class PlanningTools
     [McpServerTool(Name = "get_planning_data"), Description("Get all planning data for a ticket (sessions, decisions, progress)")]
     public async Task<string> GetPlanningData(
         [Description("Ticket key (e.g., DEMO-1) or ID")] string ticketKeyOrId,
+        [Description("Return compact response (counts and recent items only)")] bool compact = false,
         CancellationToken cancellationToken = default)
     {
         try
@@ -207,6 +208,39 @@ public class PlanningTools
                 return JsonSerializer.Serialize(new { error = $"Ticket '{ticketKeyOrId}' not found" });
 
             var data = await _planningService.GetPlanningDataByTicketIdAsync(ticketId.Value, cancellationToken);
+
+            if (compact)
+            {
+                var latestSession = data.Sessions.OrderByDescending(s => s.CreatedAt).FirstOrDefault();
+                var recentDecisions = data.ReasoningLogs.OrderByDescending(r => r.CreatedAt).Take(3);
+                var recentProgress = data.ProgressEntries.OrderByDescending(p => p.CreatedAt).Take(3);
+
+                return JsonSerializer.Serialize(new
+                {
+                    sessionCount = data.Sessions.Count(),
+                    latestSession = latestSession == null ? null : new
+                    {
+                        latestSession.Id,
+                        latestSession.IsCompleted,
+                        latestSession.CreatedAt
+                    },
+                    reasoningLogCount = data.ReasoningLogs.Count(),
+                    recentDecisions = recentDecisions.Select(r => new
+                    {
+                        r.DecisionPoint,
+                        r.ChosenOption,
+                        r.CreatedAt
+                    }),
+                    progressEntryCount = data.ProgressEntries.Count(),
+                    recentProgress = recentProgress.Select(p => new
+                    {
+                        Content = string.IsNullOrEmpty(p.Content) ? p.Content
+                            : (p.Content.Length > 100 ? p.Content.Substring(0, 100) + "..." : p.Content),
+                        Outcome = p.Outcome.ToString(),
+                        p.CreatedAt
+                    })
+                }, JsonOptions);
+            }
 
             return JsonSerializer.Serialize(new
             {

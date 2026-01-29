@@ -105,6 +105,7 @@ public class ImplementationPlanTools
     [McpServerTool(Name = "get_implementation_plan"), Description("Get the current implementation plan for a ticket (latest approved or draft)")]
     public async Task<string> GetImplementationPlan(
         [Description("Ticket key (e.g., DEMO-1) or ID")] string ticketKeyOrId,
+        [Description("Return compact response (metadata only, no content)")] bool compact = false,
         CancellationToken cancellationToken = default)
     {
         try
@@ -119,6 +120,21 @@ public class ImplementationPlanTools
                     found = false,
                     message = $"No implementation plan found for ticket '{ticketKeyOrId}'"
                 });
+
+            if (compact)
+            {
+                return JsonSerializer.Serialize(new
+                {
+                    found = true,
+                    plan.Id,
+                    plan.Status,
+                    plan.Version,
+                    plan.EstimatedEffort,
+                    AffectedFileCount = plan.AffectedFiles?.Count ?? 0,
+                    plan.CreatedAt,
+                    plan.ApprovedAt
+                }, JsonOptions);
+            }
 
             return JsonSerializer.Serialize(new
             {

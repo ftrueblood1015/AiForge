@@ -56,6 +56,7 @@ public class TicketTools
     [McpServerTool(Name = "get_ticket"), Description("Get detailed ticket information by key (e.g., DEMO-1) or ID")]
     public async Task<string> GetTicket(
         [Description("Ticket key (e.g., DEMO-1) or ticket ID (GUID)")] string ticketKeyOrId,
+        [Description("Return compact response (minimal fields only)")] bool compact = false,
         CancellationToken cancellationToken = default)
     {
         TicketDetailDto? ticket;
@@ -71,6 +72,19 @@ public class TicketTools
 
         if (ticket == null)
             return JsonSerializer.Serialize(new { error = $"Ticket '{ticketKeyOrId}' not found" });
+
+        if (compact)
+        {
+            return JsonSerializer.Serialize(new
+            {
+                ticket.Id,
+                ticket.Key,
+                ticket.Title,
+                Status = ticket.Status.ToString(),
+                Priority = ticket.Priority.ToString(),
+                Type = ticket.Type.ToString()
+            }, JsonOptions);
+        }
 
         return JsonSerializer.Serialize(new
         {
