@@ -75,11 +75,12 @@ public class PlanningTools
         [Description("Comma-separated list of other options considered")] string? optionsConsidered = null,
         [Description("Confidence level 0-100")] int? confidence = null,
         [Description("Claude session identifier")] string? sessionId = null,
+        [Description("Return full entity response instead of minimal confirmation")] bool returnFull = false,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            var ticketId = await ResolveTicketIdAsync(ticketKeyOrId, cancellationToken);
+            var (ticketId, ticketKey) = await ResolveTicketAsync(ticketKeyOrId, cancellationToken);
             if (ticketId == null)
                 return JsonSerializer.Serialize(new { error = $"Ticket '{ticketKeyOrId}' not found" });
 
@@ -100,12 +101,21 @@ public class PlanningTools
 
             var log = await _planningService.CreateReasoningLogAsync(request, cancellationToken);
 
+            if (returnFull)
+            {
+                return JsonSerializer.Serialize(new
+                {
+                    success = true,
+                    entity = log,
+                    message = "Decision logged"
+                }, JsonOptions);
+            }
+
             return JsonSerializer.Serialize(new
             {
                 success = true,
-                log.Id,
-                log.DecisionPoint,
-                log.ChosenOption,
+                Id = log.Id,
+                TicketKey = ticketKey,
                 message = "Decision logged"
             }, JsonOptions);
         }
@@ -123,11 +133,12 @@ public class PlanningTools
         [Description("Comma-separated list of files affected")] string? filesAffected = null,
         [Description("Error details if outcome is Failure or Blocked")] string? errorDetails = null,
         [Description("Claude session identifier")] string? sessionId = null,
+        [Description("Return full entity response instead of minimal confirmation")] bool returnFull = false,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            var ticketId = await ResolveTicketIdAsync(ticketKeyOrId, cancellationToken);
+            var (ticketId, ticketKey) = await ResolveTicketAsync(ticketKeyOrId, cancellationToken);
             if (ticketId == null)
                 return JsonSerializer.Serialize(new { error = $"Ticket '{ticketKeyOrId}' not found" });
 
@@ -147,12 +158,21 @@ public class PlanningTools
 
             var entry = await _planningService.CreateProgressEntryAsync(request, cancellationToken);
 
+            if (returnFull)
+            {
+                return JsonSerializer.Serialize(new
+                {
+                    success = true,
+                    entity = entry,
+                    message = "Progress logged"
+                }, JsonOptions);
+            }
+
             return JsonSerializer.Serialize(new
             {
                 success = true,
-                entry.Id,
-                entry.Content,
-                Outcome = entry.Outcome.ToString(),
+                Id = entry.Id,
+                TicketKey = ticketKey,
                 message = "Progress logged"
             }, JsonOptions);
         }
@@ -338,5 +358,17 @@ public class PlanningTools
 
         var ticket = await _ticketService.GetByKeyAsync(ticketKeyOrId.ToUpperInvariant(), cancellationToken);
         return ticket?.Id;
+    }
+
+    private async Task<(Guid? Id, string? Key)> ResolveTicketAsync(string ticketKeyOrId, CancellationToken cancellationToken)
+    {
+        if (Guid.TryParse(ticketKeyOrId, out var id))
+        {
+            var ticket = await _ticketService.GetByIdAsync(id, cancellationToken);
+            return (ticket?.Id, ticket?.Key);
+        }
+
+        var ticketByKey = await _ticketService.GetByKeyAsync(ticketKeyOrId.ToUpperInvariant(), cancellationToken);
+        return (ticketByKey?.Id, ticketByKey?.Key);
     }
 }

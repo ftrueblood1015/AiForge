@@ -113,6 +113,7 @@ public class TicketTools
         [Description("Type: Task, Bug, Feature, Enhancement (default: Task)")] string type = "Task",
         [Description("Priority: Low, Medium, High, Critical (default: Medium)")] string priority = "Medium",
         [Description("Parent ticket ID for sub-tasks")] string? parentTicketId = null,
+        [Description("Return full entity response instead of minimal confirmation")] bool returnFull = false,
         CancellationToken cancellationToken = default)
     {
         try
@@ -129,15 +130,21 @@ public class TicketTools
 
             var ticket = await _ticketService.CreateAsync(request, cancellationToken);
 
+            if (returnFull)
+            {
+                return JsonSerializer.Serialize(new
+                {
+                    success = true,
+                    entity = ticket,
+                    message = $"Ticket {ticket.Key} created successfully"
+                }, JsonOptions);
+            }
+
             return JsonSerializer.Serialize(new
             {
                 success = true,
-                ticket.Id,
-                ticket.Key,
-                ticket.Title,
-                Status = ticket.Status.ToString(),
-                Type = ticket.Type.ToString(),
-                Priority = ticket.Priority.ToString(),
+                Id = ticket.Id,
+                Key = ticket.Key,
                 message = $"Ticket {ticket.Key} created successfully"
             }, JsonOptions);
         }
@@ -260,23 +267,15 @@ public class TicketTools
         [Description("Comment content (markdown supported)")] string content,
         [Description("Whether this comment is AI-generated")] bool isAiGenerated = true,
         [Description("Session ID for AI-generated comments")] string? sessionId = null,
+        [Description("Return full entity response instead of minimal confirmation")] bool returnFull = false,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            // First get the ticket ID
-            Guid ticketId;
-            if (Guid.TryParse(ticketKeyOrId, out var id))
-            {
-                ticketId = id;
-            }
-            else
-            {
-                var existing = await _ticketService.GetByKeyAsync(ticketKeyOrId.ToUpperInvariant(), cancellationToken);
-                if (existing == null)
-                    return JsonSerializer.Serialize(new { error = $"Ticket '{ticketKeyOrId}' not found" });
-                ticketId = existing.Id;
-            }
+            // Resolve ticket to get both ID and Key
+            var ticket = await ResolveTicketAsync(ticketKeyOrId, cancellationToken);
+            if (ticket == null)
+                return JsonSerializer.Serialize(new { error = $"Ticket '{ticketKeyOrId}' not found" });
 
             var request = new AiForge.Application.DTOs.Comments.CreateCommentRequest
             {
@@ -285,13 +284,23 @@ public class TicketTools
                 SessionId = sessionId
             };
 
-            var comment = await _commentService.CreateAsync(ticketId, request, cancellationToken);
+            var comment = await _commentService.CreateAsync(ticket.Id, request, cancellationToken);
+
+            if (returnFull)
+            {
+                return JsonSerializer.Serialize(new
+                {
+                    success = true,
+                    entity = comment,
+                    message = "Comment added successfully"
+                }, JsonOptions);
+            }
 
             return JsonSerializer.Serialize(new
             {
                 success = true,
-                comment.Id,
-                comment.TicketId,
+                Id = comment.Id,
+                TicketKey = ticket.Key,
                 message = "Comment added successfully"
             }, JsonOptions);
         }
@@ -310,6 +319,7 @@ public class TicketTools
         [Description("Sub-ticket description (optional)")] string? description = null,
         [Description("Type: Task, Bug, Feature, Enhancement (default: Task)")] string type = "Task",
         [Description("Priority: Low, Medium, High, Critical (default: Medium)")] string priority = "Medium",
+        [Description("Return full entity response instead of minimal confirmation")] bool returnFull = false,
         CancellationToken cancellationToken = default)
     {
         try
@@ -329,16 +339,23 @@ public class TicketTools
 
             var ticket = await _ticketService.CreateSubTicketAsync(parentTicket.Id, request, cancellationToken);
 
+            if (returnFull)
+            {
+                return JsonSerializer.Serialize(new
+                {
+                    success = true,
+                    entity = ticket,
+                    ParentKey = parentTicket.Key,
+                    message = $"Sub-ticket {ticket.Key} created under {parentTicket.Key}"
+                }, JsonOptions);
+            }
+
             return JsonSerializer.Serialize(new
             {
                 success = true,
                 Id = ticket.Id,
                 Key = ticket.Key,
-                Title = ticket.Title,
                 ParentKey = parentTicket.Key,
-                Status = ticket.Status.ToString(),
-                Type = ticket.Type.ToString(),
-                Priority = ticket.Priority.ToString(),
                 message = $"Sub-ticket {ticket.Key} created under {parentTicket.Key}"
             }, JsonOptions);
         }

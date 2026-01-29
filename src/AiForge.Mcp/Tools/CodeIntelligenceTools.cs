@@ -41,11 +41,12 @@ public class CodeIntelligenceTools
         [Description("Number of lines added")] int? linesAdded = null,
         [Description("Number of lines removed")] int? linesRemoved = null,
         [Description("Claude session identifier")] string? sessionId = null,
+        [Description("Return full entity response instead of minimal confirmation")] bool returnFull = false,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            var ticketId = await ResolveTicketIdAsync(ticketKeyOrId, cancellationToken);
+            var (ticketId, ticketKey) = await ResolveTicketAsync(ticketKeyOrId, cancellationToken);
             if (ticketId == null)
                 return JsonSerializer.Serialize(new { error = $"Ticket '{ticketKeyOrId}' not found" });
 
@@ -62,14 +63,21 @@ public class CodeIntelligenceTools
 
             var fileChange = await _fileChangeService.LogFileChangeAsync(ticketId.Value, request, cancellationToken);
 
+            if (returnFull)
+            {
+                return JsonSerializer.Serialize(new
+                {
+                    success = true,
+                    entity = fileChange,
+                    message = $"File change logged: {changeType} {filePath}"
+                }, JsonOptions);
+            }
+
             return JsonSerializer.Serialize(new
             {
                 success = true,
-                fileChange.Id,
-                fileChange.TicketId,
-                fileChange.FilePath,
-                fileChange.ChangeType,
-                fileChange.ChangeReason,
+                Id = fileChange.Id,
+                TicketKey = ticketKey,
                 message = $"File change logged: {changeType} {filePath}"
             }, JsonOptions);
         }
@@ -407,5 +415,17 @@ public class CodeIntelligenceTools
 
         var ticket = await _ticketService.GetByKeyAsync(ticketKeyOrId.ToUpperInvariant(), cancellationToken);
         return ticket?.Id;
+    }
+
+    private async Task<(Guid? Id, string? Key)> ResolveTicketAsync(string ticketKeyOrId, CancellationToken cancellationToken)
+    {
+        if (Guid.TryParse(ticketKeyOrId, out var id))
+        {
+            var ticket = await _ticketService.GetByIdAsync(id, cancellationToken);
+            return (ticket?.Id, ticket?.Key);
+        }
+
+        var ticketByKey = await _ticketService.GetByKeyAsync(ticketKeyOrId.ToUpperInvariant(), cancellationToken);
+        return (ticketByKey?.Id, ticketByKey?.Key);
     }
 }

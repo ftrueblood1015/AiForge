@@ -341,7 +341,7 @@ public class QueueTools
         }
     }
 
-    [McpServerTool(Name = "aiforge_advance_queue_item"), Description("Complete the current queue item and advance to the next. Updates item status and returns the next item to work on.")]
+    [McpServerTool(Name = "aiforge_advance_queue_item"), Description("Complete the current queue item and advance to the next. Updates item status, automatically updates queue context, and returns the next item to work on.")]
     public async Task<string> AdvanceQueueItem(
         [Description("Queue ID (GUID)")] string queueId,
         [Description("Item ID (GUID) to mark as completed")] string itemId,
@@ -356,6 +356,17 @@ public class QueueTools
             if (!Guid.TryParse(itemId, out var iId))
                 return JsonSerializer.Serialize(new { error = "Invalid item ID format" });
 
+            // Get the current item to resolve ticket details before marking complete
+            var currentItems = await _queueService.GetItemsAsync(qId, cancellationToken);
+            var currentItem = currentItems.FirstOrDefault(i => i.Id == iId);
+            if (currentItem == null)
+                return JsonSerializer.Serialize(new { error = "Item not found" });
+
+            // Resolve completed ticket details
+            var completedTicket = await _ticketService.GetByIdAsync(currentItem.WorkItemId, cancellationToken);
+            var completedTicketKey = completedTicket?.Key ?? "Unknown";
+            var completedTicketTitle = completedTicket?.Title ?? "Unknown";
+
             // Mark current item as completed
             var updateRequest = new UpdateQueueItemRequest
             {
@@ -365,14 +376,51 @@ public class QueueTools
 
             var completedItem = await _queueService.UpdateItemAsync(qId, iId, updateRequest, cancellationToken);
             if (completedItem == null)
-                return JsonSerializer.Serialize(new { error = "Item not found" });
+                return JsonSerializer.Serialize(new { error = "Failed to update item" });
 
-            // Get all items to find the next one
+            // Get all items to find the next one and build next steps
             var items = await _queueService.GetItemsAsync(qId, cancellationToken);
-            var nextItem = items
+            var pendingItems = items
                 .Where(i => i.Status == WorkQueueItemStatus.Pending)
                 .OrderBy(i => i.Position)
-                .FirstOrDefault();
+                .ToList();
+            var nextItem = pendingItems.FirstOrDefault();
+
+            // Build context update
+            string currentFocus;
+            List<string> nextSteps = new();
+
+            if (nextItem != null)
+            {
+                // Resolve next ticket details
+                var nextTicket = await _ticketService.GetByIdAsync(nextItem.WorkItemId, cancellationToken);
+                var nextTicketKey = nextTicket?.Key ?? "Unknown";
+                var nextTicketTitle = nextTicket?.Title ?? "Unknown";
+
+                currentFocus = $"Completed {completedTicketKey}. Next: {nextTicketKey}: {nextTicketTitle}";
+
+                // Build next steps from remaining items
+                foreach (var item in pendingItems)
+                {
+                    var ticket = item == nextItem ? nextTicket : await _ticketService.GetByIdAsync(item.WorkItemId, cancellationToken);
+                    if (ticket != null)
+                        nextSteps.Add($"{ticket.Key}: {ticket.Title}");
+                }
+            }
+            else
+            {
+                currentFocus = $"Completed {completedTicketKey}. All queue items done!";
+                nextSteps.Add("All implementation tasks completed");
+                nextSteps.Add("Ready for code review");
+            }
+
+            // Automatically update queue context
+            var contextRequest = new UpdateContextRequest
+            {
+                CurrentFocus = currentFocus,
+                ReplaceNextSteps = nextSteps
+            };
+            var updatedContext = await _queueService.UpdateContextAsync(qId, contextRequest, cancellationToken);
 
             return JsonSerializer.Serialize(new
             {
@@ -391,7 +439,12 @@ public class QueueTools
                     nextItem.Position,
                     nextItem.Notes
                 } : null,
-                remainingItems = items.Count(i => i.Status == WorkQueueItemStatus.Pending),
+                remainingItems = pendingItems.Count,
+                contextUpdated = new
+                {
+                    currentFocus,
+                    nextSteps
+                },
                 message = nextItem != null
                     ? $"Advanced to item at position {nextItem.Position}"
                     : "All items completed!"
