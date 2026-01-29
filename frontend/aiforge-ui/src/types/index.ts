@@ -988,3 +988,219 @@ export interface UpdateContextRequest {
 export interface WorkQueueSearchParams {
   status?: WorkQueueStatus;
 }
+
+// ==========================================
+// Skill Chain Types
+// ==========================================
+
+// Skill Chain Enums
+export type TransitionType = 'NextLink' | 'GoToLink' | 'Complete' | 'Retry' | 'Escalate';
+export type ChainExecutionStatus = 'Pending' | 'Running' | 'Paused' | 'Completed' | 'Failed' | 'Cancelled';
+export type LinkExecutionOutcome = 'Pending' | 'Success' | 'Failure' | 'Skipped';
+
+// Skill Chain Entity
+export interface SkillChain {
+  id: string;
+  chainKey: string;
+  name: string;
+  description: string | null;
+  inputSchema: string | null;
+  maxTotalFailures: number;
+  organizationId: string | null;
+  projectId: string | null;
+  scope: ConfigurationScope;
+  isPublished: boolean;
+  links: SkillChainLink[];
+  createdAt: string;
+  createdBy: string | null;
+  updatedAt: string;
+  updatedBy: string | null;
+}
+
+export interface SkillChainSummary {
+  id: string;
+  chainKey: string;
+  name: string;
+  description: string | null;
+  scope: ConfigurationScope;
+  isPublished: boolean;
+  linkCount: number;
+  executionCount: number;
+  createdAt: string;
+}
+
+// Skill Chain Link Entity
+export interface SkillChainLink {
+  id: string;
+  skillChainId: string;
+  position: number;
+  name: string;
+  description: string | null;
+  skillId: string;
+  skillName: string | null;
+  skillKey: string | null;
+  agentId: string | null;
+  agentName: string | null;
+  agentKey: string | null;
+  maxRetries: number;
+  onSuccessTransition: TransitionType;
+  onSuccessTargetLinkId: string | null;
+  onFailureTransition: TransitionType;
+  onFailureTargetLinkId: string | null;
+  linkConfig: string | null;
+}
+
+// Skill Chain Execution Entity
+export interface SkillChainExecution {
+  id: string;
+  skillChainId: string;
+  chainKey: string | null;
+  chainName: string | null;
+  ticketId: string | null;
+  ticketKey: string | null;
+  status: ChainExecutionStatus;
+  currentLinkId: string | null;
+  currentLinkName: string | null;
+  currentLinkPosition: number | null;
+  inputValues: string | null;
+  executionContext: string | null;
+  totalFailureCount: number;
+  requiresHumanIntervention: boolean;
+  interventionReason: string | null;
+  startedAt: string;
+  completedAt: string | null;
+  startedBy: string | null;
+  completedBy: string | null;
+  linkExecutions: SkillChainLinkExecution[];
+}
+
+export interface SkillChainExecutionSummary {
+  id: string;
+  skillChainId: string;
+  chainName: string | null;
+  ticketId: string | null;
+  ticketKey: string | null;
+  status: ChainExecutionStatus;
+  currentLinkName: string | null;
+  totalFailureCount: number;
+  requiresHumanIntervention: boolean;
+  startedAt: string;
+  completedAt: string | null;
+}
+
+// Skill Chain Link Execution Entity
+export interface SkillChainLinkExecution {
+  id: string;
+  skillChainExecutionId: string;
+  skillChainLinkId: string;
+  linkName: string | null;
+  linkPosition: number | null;
+  attemptNumber: number;
+  outcome: LinkExecutionOutcome;
+  input: string | null;
+  output: string | null;
+  errorDetails: string | null;
+  transitionTaken: TransitionType | null;
+  startedAt: string;
+  completedAt: string | null;
+  executedBy: string | null;
+}
+
+// Skill Chain API Request Types
+export interface CreateSkillChainRequest {
+  chainKey: string;
+  name: string;
+  description?: string;
+  inputSchema?: string;
+  maxTotalFailures?: number;
+  organizationId?: string;
+  projectId?: string;
+}
+
+export interface UpdateSkillChainRequest {
+  name?: string;
+  description?: string;
+  inputSchema?: string;
+  maxTotalFailures?: number;
+  isPublished?: boolean;
+}
+
+export interface CreateSkillChainLinkRequest {
+  name: string;
+  description?: string;
+  skillId: string;
+  agentId?: string;
+  maxRetries?: number;
+  onSuccessTransition?: TransitionType;
+  onSuccessTargetLinkId?: string;
+  onFailureTransition?: TransitionType;
+  onFailureTargetLinkId?: string;
+  linkConfig?: string;
+  position?: number;
+}
+
+export interface UpdateSkillChainLinkRequest {
+  name?: string;
+  description?: string;
+  skillId?: string;
+  agentId?: string;
+  maxRetries?: number;
+  onSuccessTransition?: TransitionType;
+  onSuccessTargetLinkId?: string;
+  onFailureTransition?: TransitionType;
+  onFailureTargetLinkId?: string;
+  linkConfig?: string;
+}
+
+export interface ReorderLinksRequest {
+  linkIdsInOrder: string[];
+}
+
+// Skill Chain Execution API Request Types
+export interface StartChainExecutionRequest {
+  skillChainId: string;
+  ticketId?: string;
+  inputValues?: string;
+  startedBy?: string;
+}
+
+export interface RecordLinkOutcomeRequest {
+  linkId: string;
+  outcome: 'Success' | 'Failure';
+  output?: string;
+  errorDetails?: string;
+  executedBy?: string;
+}
+
+export interface ResumeExecutionRequest {
+  resumedBy?: string;
+  additionalContext?: string;
+}
+
+export interface ResolveInterventionRequest {
+  resolution: string;
+  nextAction: 'Retry' | 'GoToLink' | 'Complete' | 'Escalate';
+  targetLinkId?: string;
+  resolvedBy?: string;
+}
+
+export interface PauseExecutionRequest {
+  reason: string;
+}
+
+export interface CancelExecutionRequest {
+  reason: string;
+}
+
+// Skill Chain Search Params
+export interface SkillChainSearchParams {
+  organizationId?: string;
+  projectId?: string;
+  publishedOnly?: boolean;
+}
+
+export interface SkillChainExecutionSearchParams {
+  chainId?: string;
+  ticketId?: string;
+  status?: ChainExecutionStatus;
+}

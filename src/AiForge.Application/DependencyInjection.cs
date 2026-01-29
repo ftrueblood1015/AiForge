@@ -42,6 +42,10 @@ public static class DependencyInjection
         // Work Queue Services
         services.AddScoped<IWorkQueueService, WorkQueueService>();
 
+        // Skill Chain Services
+        services.AddScoped<ISkillChainService, SkillChainService>();
+        services.AddScoped<ISkillChainExecutionService, SkillChainExecutionService>();
+
         return services;
     }
 }

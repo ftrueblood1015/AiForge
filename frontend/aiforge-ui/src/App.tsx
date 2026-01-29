@@ -19,6 +19,7 @@ const AgentList = lazy(() => import('./pages/AgentList'));
 const SkillList = lazy(() => import('./pages/SkillList'));
 const QueueList = lazy(() => import('./pages/QueueList'));
 const QueueDetail = lazy(() => import('./pages/QueueDetail'));
+const SkillChainList = lazy(() => import('./pages/SkillChainList'));
 
 // Loading fallback component
 function PageLoader() {
@@ -149,6 +150,14 @@ function App() {
           element={
             <Suspense fallback={<PageLoader />}>
               <QueueDetail />
+            </Suspense>
+          }
+        />
+        <Route
+          path="skill-chains"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <SkillChainList />
             </Suspense>
           }
         />

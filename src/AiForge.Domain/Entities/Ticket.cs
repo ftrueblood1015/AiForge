@@ -34,4 +34,5 @@ public class Ticket
     public ICollection<TestLink> TestLinks { get; set; } = new List<TestLink>();
     public ICollection<TechnicalDebt> OriginatedDebts { get; set; } = new List<TechnicalDebt>();
     public ICollection<TechnicalDebt> ResolvedDebts { get; set; } = new List<TechnicalDebt>();
+    public ICollection<SkillChainExecution> ChainExecutions { get; set; } = new List<SkillChainExecution>();
 }

@@ -33,6 +33,10 @@ public class AiForgeDbContext : DbContext
     public DbSet<ConfigurationSet> ConfigurationSets => Set<ConfigurationSet>();
     public DbSet<WorkQueue> WorkQueues => Set<WorkQueue>();
     public DbSet<WorkQueueItem> WorkQueueItems => Set<WorkQueueItem>();
+    public DbSet<SkillChain> SkillChains => Set<SkillChain>();
+    public DbSet<SkillChainLink> SkillChainLinks => Set<SkillChainLink>();
+    public DbSet<SkillChainExecution> SkillChainExecutions => Set<SkillChainExecution>();
+    public DbSet<SkillChainLinkExecution> SkillChainLinkExecutions => Set<SkillChainLinkExecution>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

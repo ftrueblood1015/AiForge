@@ -20,6 +20,7 @@ import {
   Analytics as AnalyticsIcon,
   SmartToy as AgentIcon,
   Psychology as SkillIcon,
+  AccountTree as ChainIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -41,6 +42,7 @@ const menuItems = [
 const configMenuItems = [
   { text: 'Agents', icon: <AgentIcon />, path: '/agents' },
   { text: 'Skills', icon: <SkillIcon />, path: '/skills' },
+  { text: 'Skill Chains', icon: <ChainIcon />, path: '/skill-chains' },
 ];
 
 const bottomMenuItems = [

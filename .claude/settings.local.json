@@ -100,7 +100,8 @@
       "Bash(dotnet ef migrations list:*)",
       "mcp__aiforge__aiforge_add_queue_item",
       "mcp__aiforge__aiforge_checkout_queue",
-      "mcp__aiforge__aiforge_update_context"
+      "mcp__aiforge__aiforge_update_context",
+      "mcp__aiforge__aiforge_release_queue"
     ]
   },
   "enableAllProjectMcpServers": true,

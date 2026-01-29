@@ -25,4 +25,5 @@ public class Skill
 
     // Navigation
     public Project? Project { get; set; }
+    public ICollection<SkillChainLink> ChainLinks { get; set; } = new List<SkillChainLink>();
 }

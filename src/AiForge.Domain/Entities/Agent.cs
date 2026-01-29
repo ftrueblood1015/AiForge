@@ -28,4 +28,5 @@ public class Agent
 
     // Navigation
     public Project? Project { get; set; }
+    public ICollection<SkillChainLink> ChainLinks { get; set; } = new List<SkillChainLink>();
 }
