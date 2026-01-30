@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Box,
   Typography,
@@ -5,7 +6,14 @@ import {
   Chip,
   Tooltip,
   Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  IconButton,
 } from '@mui/material';
+import { Close as CloseIcon } from '@mui/icons-material';
 import {
   CheckCircle as SuccessIcon,
   Error as FailureIcon,
@@ -43,6 +51,8 @@ function formatTime(dateString: string): string {
 }
 
 export default function ExecutionTimeline({ linkExecutions }: ExecutionTimelineProps) {
+  const [expandedOutput, setExpandedOutput] = useState<{ linkName: string; output: string } | null>(null);
+
   if (linkExecutions.length === 0) {
     return (
       <Box sx={{ p: 2, textAlign: 'center' }}>
@@ -50,6 +60,14 @@ export default function ExecutionTimeline({ linkExecutions }: ExecutionTimelineP
       </Box>
     );
   }
+
+  const handleExpandOutput = (linkName: string, output: string) => {
+    setExpandedOutput({ linkName, output });
+  };
+
+  const handleCloseDialog = () => {
+    setExpandedOutput(null);
+  };
 
   return (
     <Box sx={{ position: 'relative' }}>
@@ -167,16 +185,21 @@ export default function ExecutionTimeline({ linkExecutions }: ExecutionTimelineP
                     <Typography
                       variant="caption"
                       color="text.secondary"
+                      component="div"
+                      onClick={() => handleExpandOutput(exec.linkName || `Position ${exec.linkPosition}`, exec.output!)}
                       sx={{
                         display: 'block',
                         maxHeight: 60,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         fontFamily: 'monospace',
-                        bgcolor: 'grey.50',
+                        bgcolor: 'action.hover',
                         p: 1,
                         borderRadius: 1,
                         cursor: 'pointer',
+                        '&:hover': {
+                          bgcolor: 'action.selected',
+                        },
                       }}
                     >
                       {exec.output}
@@ -188,6 +211,43 @@ export default function ExecutionTimeline({ linkExecutions }: ExecutionTimelineP
           </Box>
         );
       })}
+
+      {/* Expanded Output Dialog */}
+      <Dialog
+        open={Boolean(expandedOutput)}
+        onClose={handleCloseDialog}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          Output: {expandedOutput?.linkName}
+          <IconButton onClick={handleCloseDialog} size="small">
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          <Box
+            component="pre"
+            sx={{
+              p: 2,
+              bgcolor: 'action.hover',
+              borderRadius: 1,
+              overflow: 'auto',
+              fontSize: '0.875rem',
+              fontFamily: 'monospace',
+              m: 0,
+              maxHeight: '60vh',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+            }}
+          >
+            {expandedOutput?.output}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

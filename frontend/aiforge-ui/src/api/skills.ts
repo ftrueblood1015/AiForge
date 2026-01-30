@@ -9,7 +9,14 @@ import type {
 
 export const skillsApi = {
   getAll: async (params?: SkillSearchParams): Promise<SkillListResponse> => {
-    const response = await client.get<SkillListResponse>('/api/skills', { params });
+    // Map frontend params to backend params (isPublished -> publishedOnly)
+    const apiParams = params ? {
+      organizationId: params.organizationId,
+      projectId: params.projectId,
+      category: params.category,
+      publishedOnly: params.isPublished,
+    } : undefined;
+    const response = await client.get<SkillListResponse>('/api/skills', { params: apiParams });
     return response.data;
   },
 

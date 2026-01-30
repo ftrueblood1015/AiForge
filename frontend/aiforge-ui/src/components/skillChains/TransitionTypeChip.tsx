@@ -14,7 +14,7 @@ interface TransitionTypeChipProps {
   variant?: 'filled' | 'outlined';
 }
 
-const transitionConfig: Record<TransitionType, { color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'; icon: React.ReactNode; label: string }> = {
+const transitionConfig: Record<TransitionType, { color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'; icon: React.ReactElement; label: string }> = {
   NextLink: { color: 'info', icon: <NextIcon fontSize="small" />, label: 'Next Link' },
   GoToLink: { color: 'secondary', icon: <GoToIcon fontSize="small" />, label: 'Go To Link' },
   Complete: { color: 'success', icon: <CompleteIcon fontSize="small" />, label: 'Complete' },

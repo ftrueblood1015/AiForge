@@ -14,7 +14,7 @@ interface ChainStatusChipProps {
   size?: 'small' | 'medium';
 }
 
-const statusConfig: Record<ChainExecutionStatus, { color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'; icon: React.ReactNode; label: string }> = {
+const statusConfig: Record<ChainExecutionStatus, { color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'; icon: React.ReactElement; label: string }> = {
   Pending: { color: 'default', icon: <PendingIcon fontSize="small" />, label: 'Pending' },
   Running: { color: 'primary', icon: <RunningIcon fontSize="small" />, label: 'Running' },
   Paused: { color: 'warning', icon: <PausedIcon fontSize="small" />, label: 'Paused' },

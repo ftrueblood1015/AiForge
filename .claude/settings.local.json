@@ -123,7 +123,8 @@
       "mcp__aiforge__aiforge_advance_queue_item",
       "mcp__aiforge__get_planning_data",
       "mcp__aiforge__list_sub_tickets",
-      "mcp__aiforge__get_execution_checkpoint"
+      "mcp__aiforge__get_execution_checkpoint",
+      "mcp__aiforge__aiforge_get_queue_items"
     ]
   },
   "enableAllProjectMcpServers": true,

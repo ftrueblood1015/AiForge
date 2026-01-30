@@ -13,7 +13,7 @@ public interface IAgentService
     Task<AgentDto> CreateAgentAsync(CreateAgentRequest request, string createdBy, CancellationToken cancellationToken = default);
     Task<AgentDto?> GetAgentByIdAsync(Guid agentId, CancellationToken cancellationToken = default);
     Task<AgentDto?> GetAgentByKeyAsync(string agentKey, Guid? projectId, Guid organizationId, CancellationToken cancellationToken = default);
-    Task<AgentListResponse> GetAgentsAsync(Guid? organizationId, Guid? projectId, CancellationToken cancellationToken = default);
+    Task<AgentListResponse> GetAgentsAsync(Guid? organizationId, Guid? projectId, string? agentType = null, string? status = null, bool? isEnabled = null, CancellationToken cancellationToken = default);
     Task<AgentDto?> UpdateAgentAsync(Guid agentId, UpdateAgentRequest request, string updatedBy, CancellationToken cancellationToken = default);
     Task<bool> DeleteAgentAsync(Guid agentId, CancellationToken cancellationToken = default);
 }
@@ -92,7 +92,7 @@ public class AgentService : IAgentService
         return agent != null ? MapToDto(agent) : null;
     }
 
-    public async Task<AgentListResponse> GetAgentsAsync(Guid? organizationId, Guid? projectId, CancellationToken cancellationToken = default)
+    public async Task<AgentListResponse> GetAgentsAsync(Guid? organizationId, Guid? projectId, string? agentType = null, string? status = null, bool? isEnabled = null, CancellationToken cancellationToken = default)
     {
         IQueryable<Agent> query = _context.Agents.AsNoTracking();
 
@@ -108,6 +108,24 @@ public class AgentService : IAgentService
         else if (projectId.HasValue)
         {
             query = query.Where(a => a.ProjectId == projectId);
+        }
+
+        // Apply agentType filter
+        if (!string.IsNullOrEmpty(agentType) && Enum.TryParse<AgentType>(agentType, ignoreCase: true, out var parsedType))
+        {
+            query = query.Where(a => a.AgentType == parsedType);
+        }
+
+        // Apply status filter
+        if (!string.IsNullOrEmpty(status) && Enum.TryParse<AgentStatus>(status, ignoreCase: true, out var parsedStatus))
+        {
+            query = query.Where(a => a.Status == parsedStatus);
+        }
+
+        // Apply isEnabled filter
+        if (isEnabled.HasValue)
+        {
+            query = query.Where(a => a.IsEnabled == isEnabled.Value);
         }
 
         var agents = await query.OrderBy(a => a.Name).ToListAsync(cancellationToken);

@@ -94,7 +94,7 @@ export default function ChainLinkForm({
         setLoadingOptions(true);
         try {
           const [skillsResponse, agentsResponse] = await Promise.all([
-            skillsApi.getAll({ publishedOnly: true }),
+            skillsApi.getAll({ isPublished: true }),
             agentsApi.getAll({}),
           ]);
           setSkills(skillsResponse.items || []);

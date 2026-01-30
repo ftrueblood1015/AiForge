@@ -16,16 +16,19 @@ public class AgentsController : ControllerBase
     }
 
     /// <summary>
-    /// List agents with optional organization/project filters
+    /// List agents with optional organization/project/type/status/enabled filters
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(AgentListResponse), StatusCodes.Status200OK)]
     public async Task<ActionResult<AgentListResponse>> GetAgents(
         [FromQuery] Guid? organizationId,
         [FromQuery] Guid? projectId,
+        [FromQuery] string? agentType,
+        [FromQuery] string? status,
+        [FromQuery] bool? isEnabled,
         CancellationToken cancellationToken)
     {
-        var agents = await _agentService.GetAgentsAsync(organizationId, projectId, cancellationToken);
+        var agents = await _agentService.GetAgentsAsync(organizationId, projectId, agentType, status, isEnabled, cancellationToken);
         return Ok(agents);
     }
 

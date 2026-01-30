@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -181,7 +181,6 @@ export default function ExecutionDetail() {
   const canPause = execution.status === 'Running';
   const canResume = execution.status === 'Paused';
   const canCancel = execution.status === 'Running' || execution.status === 'Paused';
-  const isFinished = ['Completed', 'Failed', 'Cancelled'].includes(execution.status);
 
   return (
     <Box>

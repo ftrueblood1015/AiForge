@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -300,7 +300,7 @@ export default function SkillChainDetail() {
                 component="pre"
                 sx={{
                   p: 2,
-                  bgcolor: 'grey.100',
+                  bgcolor: 'action.hover',
                   borderRadius: 1,
                   overflow: 'auto',
                   fontSize: '0.875rem',

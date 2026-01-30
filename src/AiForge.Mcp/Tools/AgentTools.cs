@@ -17,10 +17,13 @@ public class AgentTools
         _agentService = agentService;
     }
 
-    [McpServerTool(Name = "list_agents"), Description("List agents with optional organization or project filters")]
+    [McpServerTool(Name = "list_agents"), Description("List agents with optional organization, project, or other filters")]
     public async Task<string> ListAgents(
         [Description("Organization ID (GUID) to filter by")] string? organizationId = null,
         [Description("Project ID (GUID) to filter by")] string? projectId = null,
+        [Description("Agent type filter: Claude, GPT, Gemini, Custom")] string? agentType = null,
+        [Description("Status filter: Idle, Working, Paused, Disabled, Error")] string? status = null,
+        [Description("Filter by enabled status")] bool? isEnabled = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -28,7 +31,7 @@ public class AgentTools
             var orgId = string.IsNullOrEmpty(organizationId) ? null : (Guid?)Guid.Parse(organizationId);
             var projId = string.IsNullOrEmpty(projectId) ? null : (Guid?)Guid.Parse(projectId);
 
-            var response = await _agentService.GetAgentsAsync(orgId, projId, cancellationToken);
+            var response = await _agentService.GetAgentsAsync(orgId, projId, agentType, status, isEnabled, cancellationToken);
 
             return JsonSerializer.Serialize(new
             {
