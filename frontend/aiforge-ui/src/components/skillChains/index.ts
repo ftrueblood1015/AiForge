@@ -4,6 +4,8 @@ export { default as ChainStatusChip } from './ChainStatusChip';
 export { default as ChainLinkItem } from './ChainLinkItem';
 export { default as ChainFilters } from './ChainFilters';
 export { default as TransitionTypeChip } from './TransitionTypeChip';
+export { default as ChainForm } from './ChainForm';
+export { default as ChainLinkForm } from './ChainLinkForm';
 
 // Execution Components
 export { default as ExecutionCard } from './ExecutionCard';

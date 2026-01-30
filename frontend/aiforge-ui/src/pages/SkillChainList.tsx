@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -28,18 +29,21 @@ import {
   Visibility as ViewIcon,
   Warning as InterventionIcon,
 } from '@mui/icons-material';
-import { skillChainsApi, skillChainExecutionsApi } from '../api/skillChains';
+import { skillChainExecutionsApi } from '../api/skillChains';
+import { useSkillChainStore } from '../stores/skillChainStore';
 import {
   ChainCard,
   ChainFilters,
+  ChainForm,
   ExecutionCard,
   ExecutionFilters,
 } from '../components/skillChains';
 import type {
   SkillChainSummary,
   SkillChainExecutionSummary,
-  SkillChainSearchParams,
   SkillChainExecutionSearchParams,
+  CreateSkillChainRequest,
+  UpdateSkillChainRequest,
 } from '../types';
 
 interface TabPanelProps {
@@ -58,15 +62,26 @@ function TabPanel(props: TabPanelProps) {
 }
 
 export default function SkillChainList() {
+  const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
 
-  // Chains state
-  const [chains, setChains] = useState<SkillChainSummary[]>([]);
-  const [chainsLoading, setChainsLoading] = useState(true);
-  const [chainsError, setChainsError] = useState<string | null>(null);
-  const [chainFilters, setChainFilters] = useState<SkillChainSearchParams>({});
+  // Use skill chain store for chains
+  const {
+    chains,
+    isLoading: chainsLoading,
+    error: chainsError,
+    searchParams: chainFilters,
+    fetchChains,
+    createChain,
+    updateChain,
+    deleteChain,
+    publishChain,
+    unpublishChain,
+    setSearchParams: setChainFilters,
+    clearError,
+  } = useSkillChainStore();
 
-  // Executions state
+  // Executions state (keep local for now)
   const [executions, setExecutions] = useState<SkillChainExecutionSummary[]>([]);
   const [executionsLoading, setExecutionsLoading] = useState(true);
   const [executionsError, setExecutionsError] = useState<string | null>(null);
@@ -79,25 +94,17 @@ export default function SkillChainList() {
   // Menu state
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [menuChain, setMenuChain] = useState<SkillChainSummary | null>(null);
+
+  // Dialog states
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [chainToDelete, setChainToDelete] = useState<SkillChainSummary | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingChain, setEditingChain] = useState<SkillChainSummary | null>(null);
 
-  // Fetch chains
+  // Fetch chains on mount and when filters change
   useEffect(() => {
-    const fetchChains = async () => {
-      setChainsLoading(true);
-      setChainsError(null);
-      try {
-        const data = await skillChainsApi.getAll(chainFilters);
-        setChains(data);
-      } catch (err) {
-        setChainsError(err instanceof Error ? err.message : 'Failed to load chains');
-      } finally {
-        setChainsLoading(false);
-      }
-    };
-    fetchChains();
-  }, [chainFilters]);
+    fetchChains(chainFilters);
+  }, [fetchChains, chainFilters]);
 
   // Fetch executions
   useEffect(() => {
@@ -146,19 +153,31 @@ export default function SkillChainList() {
     setMenuChain(null);
   };
 
+  const handleViewDetails = () => {
+    if (menuChain) {
+      navigate(`/skill-chains/${menuChain.id}`);
+    }
+    handleMenuClose();
+  };
+
+  const handleEditClick = () => {
+    if (menuChain) {
+      setEditingChain(menuChain);
+      setFormOpen(true);
+    }
+    handleMenuClose();
+  };
+
   const handlePublishToggle = async () => {
     if (menuChain) {
       try {
         if (menuChain.isPublished) {
-          await skillChainsApi.unpublish(menuChain.id);
+          await unpublishChain(menuChain.id);
         } else {
-          await skillChainsApi.publish(menuChain.id);
+          await publishChain(menuChain.id);
         }
-        // Refresh chains
-        const data = await skillChainsApi.getAll(chainFilters);
-        setChains(data);
-      } catch (err) {
-        setChainsError(err instanceof Error ? err.message : 'Failed to update chain');
+      } catch {
+        // Error handled by store
       }
     }
     handleMenuClose();
@@ -175,12 +194,11 @@ export default function SkillChainList() {
   const handleDeleteConfirm = async () => {
     if (chainToDelete) {
       try {
-        await skillChainsApi.delete(chainToDelete.id);
-        setChains(chains.filter(c => c.id !== chainToDelete.id));
+        await deleteChain(chainToDelete.id);
         setDeleteConfirmOpen(false);
         setChainToDelete(null);
-      } catch (err) {
-        setChainsError(err instanceof Error ? err.message : 'Failed to delete chain');
+      } catch {
+        // Error handled by store
       }
     }
   };
@@ -188,6 +206,33 @@ export default function SkillChainList() {
   const handleDeleteCancel = () => {
     setDeleteConfirmOpen(false);
     setChainToDelete(null);
+  };
+
+  const handleCreateClick = () => {
+    setEditingChain(null);
+    setFormOpen(true);
+  };
+
+  const handleFormClose = () => {
+    setFormOpen(false);
+    setEditingChain(null);
+  };
+
+  const handleFormSubmit = async (data: CreateSkillChainRequest | UpdateSkillChainRequest) => {
+    if (editingChain) {
+      await updateChain(editingChain.id, data as UpdateSkillChainRequest);
+    } else {
+      await createChain(data as CreateSkillChainRequest);
+    }
+    handleFormClose();
+  };
+
+  const handleChainClick = (chain: SkillChainSummary) => {
+    navigate(`/skill-chains/${chain.id}`);
+  };
+
+  const handleExecutionClick = (execution: SkillChainExecutionSummary) => {
+    navigate(`/skill-chains/executions/${execution.id}`);
   };
 
   const renderChainsSkeleton = () => (
@@ -217,7 +262,7 @@ export default function SkillChainList() {
         <Button
           variant="contained"
           startIcon={<AddIcon />}
-          onClick={() => {/* TODO: Open create dialog */}}
+          onClick={handleCreateClick}
         >
           Create Chain
         </Button>
@@ -259,7 +304,7 @@ export default function SkillChainList() {
       {/* Chains Tab */}
       <TabPanel value={tabValue} index={0}>
         {chainsError && (
-          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setChainsError(null)}>
+          <Alert severity="error" sx={{ mb: 2 }} onClose={clearError}>
             {chainsError}
           </Alert>
         )}
@@ -280,7 +325,7 @@ export default function SkillChainList() {
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 Create your first skill chain to define orchestrated workflows.
               </Typography>
-              <Button variant="contained" startIcon={<AddIcon />}>
+              <Button variant="contained" startIcon={<AddIcon />} onClick={handleCreateClick}>
                 Create Chain
               </Button>
             </Box>
@@ -291,6 +336,7 @@ export default function SkillChainList() {
                   <ChainCard
                     chain={chain}
                     onMenuClick={handleMenuOpen}
+                    onClick={() => handleChainClick(chain)}
                   />
                 </Grid>
               ))}
@@ -330,7 +376,7 @@ export default function SkillChainList() {
                 <Grid size={{ xs: 12, sm: 6 }} key={execution.id}>
                   <ExecutionCard
                     execution={execution}
-                    onClick={() => {/* TODO: Navigate to detail */}}
+                    onClick={() => handleExecutionClick(execution)}
                   />
                 </Grid>
               ))}
@@ -359,7 +405,7 @@ export default function SkillChainList() {
                 <Grid size={{ xs: 12, sm: 6 }} key={execution.id}>
                   <ExecutionCard
                     execution={execution}
-                    onClick={() => {/* TODO: Navigate to detail */}}
+                    onClick={() => handleExecutionClick(execution)}
                   />
                 </Grid>
               ))}
@@ -374,13 +420,13 @@ export default function SkillChainList() {
         open={Boolean(menuAnchor)}
         onClose={handleMenuClose}
       >
-        <MenuItem onClick={() => {/* TODO: Navigate to detail */}}>
+        <MenuItem onClick={handleViewDetails}>
           <ListItemIcon>
             <ViewIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText>View Details</ListItemText>
         </MenuItem>
-        <MenuItem onClick={() => {/* TODO: Edit */}}>
+        <MenuItem onClick={handleEditClick}>
           <ListItemIcon>
             <EditIcon fontSize="small" />
           </ListItemIcon>
@@ -399,7 +445,7 @@ export default function SkillChainList() {
           </ListItemText>
         </MenuItem>
         {menuChain?.isPublished && (
-          <MenuItem onClick={() => {/* TODO: Start execution */}}>
+          <MenuItem onClick={() => { navigate(`/skill-chains/${menuChain.id}`); handleMenuClose(); }}>
             <ListItemIcon>
               <StartIcon fontSize="small" color="success" />
             </ListItemIcon>
@@ -430,6 +476,16 @@ export default function SkillChainList() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Create/Edit Chain Form */}
+      <ChainForm
+        open={formOpen}
+        onClose={handleFormClose}
+        onSubmit={handleFormSubmit}
+        chain={editingChain ? { ...editingChain, links: [], inputSchema: null, maxTotalFailures: 5 } as any : undefined}
+        isLoading={chainsLoading}
+        error={chainsError}
+      />
     </Box>
   );
 }
