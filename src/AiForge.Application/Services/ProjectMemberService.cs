@@ -17,6 +17,7 @@ public interface IProjectMemberService
     Task<bool> HasAccessAsync(Guid projectId, Guid userId, CancellationToken cancellationToken = default);
     Task<bool> HasRoleAsync(Guid projectId, Guid userId, ProjectRole minimumRole, CancellationToken cancellationToken = default);
     Task<IEnumerable<Guid>> GetAccessibleProjectIdsAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<bool> AddOwnerAsync(Guid projectId, Guid userId, CancellationToken cancellationToken = default);
 }
 
 public class ProjectMemberService : IProjectMemberService
@@ -93,6 +94,28 @@ public class ProjectMemberService : IProjectMemberService
             Role = request.Role,
             AddedAt = DateTime.UtcNow,
             AddedByUserId = _userContext.UserId
+        };
+
+        _context.ProjectMembers.Add(membership);
+        await _context.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<bool> AddOwnerAsync(Guid projectId, Guid userId, CancellationToken cancellationToken = default)
+    {
+        // Check for existing membership (defensive - shouldn't exist for new project)
+        var existingMembership = await _context.ProjectMembers
+            .AnyAsync(m => m.ProjectId == projectId && m.UserId == userId, cancellationToken);
+        if (existingMembership) return false;
+
+        var membership = new ProjectMember
+        {
+            Id = Guid.NewGuid(),
+            ProjectId = projectId,
+            UserId = userId,
+            Role = ProjectRole.Owner,
+            AddedAt = DateTime.UtcNow,
+            AddedByUserId = null  // Self-added as project creator
         };
 
         _context.ProjectMembers.Add(membership);

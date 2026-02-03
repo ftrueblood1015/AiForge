@@ -102,9 +102,16 @@ public class ProjectService : IProjectService
 
         var project = _mapper.Map<Project>(request);
         project.Key = request.Key.ToUpperInvariant(); // Normalize key to uppercase
+        project.CreatedByUserId = _userContext.UserId; // Set creator from authenticated user
 
         await _projectRepository.AddAsync(project, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Create ProjectMember with Owner role for the creator
+        if (_userContext.UserId.HasValue)
+        {
+            await _projectMemberService.AddOwnerAsync(project.Id, _userContext.UserId.Value, cancellationToken);
+        }
 
         return _mapper.Map<ProjectDto>(project);
     }
