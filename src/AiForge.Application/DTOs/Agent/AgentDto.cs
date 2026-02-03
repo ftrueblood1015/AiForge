@@ -30,6 +30,7 @@ public class AgentListItemDto
     public string AgentType { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public string Scope { get; set; } = string.Empty;
+    public string? ProjectName { get; set; }
     public bool IsEnabled { get; set; }
 }
 

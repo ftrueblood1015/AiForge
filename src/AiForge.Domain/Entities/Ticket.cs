@@ -14,6 +14,8 @@ public class Ticket
     public TicketStatus Status { get; set; }
     public Priority Priority { get; set; }
     public Guid? ParentTicketId { get; set; }                    // For sub-tasks
+    public Guid? CreatedByUserId { get; set; }                   // User who created the ticket
+    public Guid? AssignedToUserId { get; set; }                  // User assigned to work on ticket
     public string? CurrentHandoffSummary { get; set; }           // Quick context
 
     // Auto-generated summaries for efficient context retrieval

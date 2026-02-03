@@ -124,7 +124,7 @@ export default function SkillCard({
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
           <Chip
             icon={skill.scope === 'Organization' ? <OrgIcon fontSize="small" /> : <ProjectIcon fontSize="small" />}
-            label={skill.scope}
+            label={skill.scope === 'Organization' ? 'Organization' : skill.projectName || 'Project'}
             size="small"
             variant="outlined"
             sx={{ height: 24, fontSize: '0.7rem' }}

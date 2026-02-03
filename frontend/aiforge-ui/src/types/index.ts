@@ -1,3 +1,41 @@
+// ==========================================
+// Authentication Types
+// ==========================================
+
+export interface User {
+  id: string;
+  email: string;
+  displayName: string;
+  isAdmin: boolean;
+  defaultOrganizationId: string | null;
+}
+
+export interface TokenPair {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: string;
+}
+
+export interface AuthResponse {
+  user: User;
+  tokens: TokenPair;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  displayName: string;
+}
+
+export interface RefreshTokenRequest {
+  refreshToken: string;
+}
+
 // Enums
 export type TicketStatus = 'ToDo' | 'InProgress' | 'InReview' | 'Done';
 export type TicketType = 'Task' | 'Bug' | 'Feature' | 'Enhancement';
@@ -675,6 +713,7 @@ export interface AgentListItem {
   agentType: AgentType;
   status: AgentStatus;
   scope: ConfigurationScope;
+  projectName?: string | null;
   isEnabled: boolean;
 }
 
@@ -703,6 +742,7 @@ export interface SkillListItem {
   description: string | null;
   category: SkillCategory;
   scope: ConfigurationScope;
+  projectName?: string | null;
   isPublished: boolean;
 }
 
@@ -1023,6 +1063,7 @@ export interface SkillChainSummary {
   name: string;
   description: string | null;
   scope: ConfigurationScope;
+  projectName?: string | null;
   isPublished: boolean;
   linkCount: number;
   executionCount: number;

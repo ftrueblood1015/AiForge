@@ -15,6 +15,8 @@ public class TicketDto
     public TicketStatus Status { get; set; }
     public Priority Priority { get; set; }
     public Guid? ParentTicketId { get; set; }
+    public Guid? CreatedByUserId { get; set; }
+    public Guid? AssignedToUserId { get; set; }
     public string? CurrentHandoffSummary { get; set; }
 
     // Auto-generated summaries
@@ -60,6 +62,15 @@ public class CreateTicketRequest
     public TicketType Type { get; set; } = TicketType.Task;
     public Priority Priority { get; set; } = Priority.Medium;
     public Guid? ParentTicketId { get; set; }
+    /// <summary>
+    /// Optional: User who created the ticket. If not specified, auto-set from authenticated user.
+    /// Used by MCP/service accounts to specify creator.
+    /// </summary>
+    public Guid? CreatedByUserId { get; set; }
+    /// <summary>
+    /// Optional: User to assign the ticket to.
+    /// </summary>
+    public Guid? AssignedToUserId { get; set; }
 }
 
 public class UpdateTicketRequest
@@ -69,6 +80,14 @@ public class UpdateTicketRequest
     public TicketType? Type { get; set; }
     public Priority? Priority { get; set; }
     public Guid? ParentTicketId { get; set; }
+    /// <summary>
+    /// Optional: User to assign the ticket to. Set to empty GUID to unassign.
+    /// </summary>
+    public Guid? AssignedToUserId { get; set; }
+    /// <summary>
+    /// When true, AssignedToUserId of null means "unassign". When false/absent, null means "no change".
+    /// </summary>
+    public bool ClearAssignee { get; set; }
 }
 
 public class TransitionTicketRequest

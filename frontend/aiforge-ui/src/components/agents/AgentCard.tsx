@@ -132,7 +132,7 @@ export default function AgentCard({
           <AgentStatusChip status={agent.status} />
           <Chip
             icon={agent.scope === 'Organization' ? <OrgIcon fontSize="small" /> : <ProjectIcon fontSize="small" />}
-            label={agent.scope}
+            label={agent.scope === 'Organization' ? 'Organization' : agent.projectName || 'Project'}
             size="small"
             variant="outlined"
             sx={{ height: 24, fontSize: '0.7rem' }}

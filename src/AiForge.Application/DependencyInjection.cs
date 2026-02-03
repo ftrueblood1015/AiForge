@@ -41,12 +41,18 @@ public static class DependencyInjection
         services.AddScoped<ISkillService, SkillService>();
         services.AddScoped<IPromptTemplateService, PromptTemplateService>();
 
+        // Project Access Services
+        services.AddScoped<IProjectMemberService, ProjectMemberService>();
+
         // Work Queue Services
         services.AddScoped<IWorkQueueService, WorkQueueService>();
 
         // Skill Chain Services
         services.AddScoped<ISkillChainService, SkillChainService>();
         services.AddScoped<ISkillChainExecutionService, SkillChainExecutionService>();
+
+        // Auth & Organization Services
+        services.AddScoped<IOrganizationService, OrganizationService>();
 
         return services;
     }

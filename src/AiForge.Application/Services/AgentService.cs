@@ -94,7 +94,9 @@ public class AgentService : IAgentService
 
     public async Task<AgentListResponse> GetAgentsAsync(Guid? organizationId, Guid? projectId, string? agentType = null, string? status = null, bool? isEnabled = null, CancellationToken cancellationToken = default)
     {
-        IQueryable<Agent> query = _context.Agents.AsNoTracking();
+        IQueryable<Agent> query = _context.Agents
+            .Include(a => a.Project)
+            .AsNoTracking();
 
         if (organizationId.HasValue && projectId.HasValue)
         {
@@ -222,6 +224,7 @@ public class AgentService : IAgentService
             AgentType = agent.AgentType.ToString(),
             Status = agent.Status.ToString(),
             Scope = agent.OrganizationId.HasValue ? "Organization" : "Project",
+            ProjectName = agent.Project?.Name,
             IsEnabled = agent.IsEnabled
         };
     }

@@ -1,9 +1,11 @@
 using AutoMapper;
 using AiForge.Application.DTOs.Tickets;
+using AiForge.Application.Interfaces;
 using AiForge.Domain.Entities;
 using AiForge.Domain.Enums;
 using AiForge.Domain.Interfaces;
 using AiForge.Infrastructure.Repositories;
+using AiForge.Application.Services;
 
 namespace AiForge.Application.Services;
 
@@ -31,19 +33,25 @@ public class TicketService : ITicketService
     private readonly ITicketHistoryRepository _historyRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly IUserContext _userContext;
+    private readonly IProjectMemberService _projectMemberService;
 
     public TicketService(
         ITicketRepository ticketRepository,
         IProjectRepository projectRepository,
         ITicketHistoryRepository historyRepository,
         IUnitOfWork unitOfWork,
-        IMapper mapper)
+        IMapper mapper,
+        IUserContext userContext,
+        IProjectMemberService projectMemberService)
     {
         _ticketRepository = ticketRepository;
         _projectRepository = projectRepository;
         _historyRepository = historyRepository;
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _userContext = userContext;
+        _projectMemberService = projectMemberService;
     }
 
     public async Task<IEnumerable<TicketDto>> SearchAsync(TicketSearchRequest request, CancellationToken cancellationToken = default)
@@ -55,6 +63,14 @@ public class TicketService : ITicketService
             request.Priority,
             request.Search,
             cancellationToken);
+
+        // Service accounts and admins can see all tickets
+        if (!_userContext.IsServiceAccount && !_userContext.IsAdmin && _userContext.UserId.HasValue)
+        {
+            var accessibleIds = await _projectMemberService.GetAccessibleProjectIdsAsync(_userContext.UserId.Value, cancellationToken);
+            var accessibleSet = accessibleIds.ToHashSet();
+            tickets = tickets.Where(t => accessibleSet.Contains(t.ProjectId));
+        }
 
         return _mapper.Map<IEnumerable<TicketDto>>(tickets);
     }
@@ -82,6 +98,10 @@ public class TicketService : ITicketService
 
         var ticket = _mapper.Map<Ticket>(request);
         ticket.ProjectId = project.Id;
+
+        // Set CreatedByUserId: use request value if provided (MCP), otherwise use current user
+        ticket.CreatedByUserId = request.CreatedByUserId ?? _userContext.UserId;
+        ticket.AssignedToUserId = request.AssignedToUserId;
 
         // Get and increment the ticket number
         var ticketNumber = await _projectRepository.GetAndIncrementNextTicketNumberAsync(project.Id, cancellationToken);
@@ -134,6 +154,18 @@ public class TicketService : ITicketService
         {
             changes.Add(("ParentTicketId", ticket.ParentTicketId?.ToString(), request.ParentTicketId?.ToString()));
             ticket.ParentTicketId = request.ParentTicketId;
+        }
+
+        // Handle AssignedToUserId changes
+        if (request.AssignedToUserId.HasValue && request.AssignedToUserId != ticket.AssignedToUserId)
+        {
+            changes.Add(("AssignedToUserId", ticket.AssignedToUserId?.ToString(), request.AssignedToUserId.Value.ToString()));
+            ticket.AssignedToUserId = request.AssignedToUserId.Value;
+        }
+        else if (request.ClearAssignee && ticket.AssignedToUserId.HasValue)
+        {
+            changes.Add(("AssignedToUserId", ticket.AssignedToUserId?.ToString(), null));
+            ticket.AssignedToUserId = null;
         }
 
         ticket.UpdatedAt = DateTime.UtcNow;
@@ -242,6 +274,7 @@ public class TicketService : ITicketService
             Type = request.Type,
             Priority = request.Priority,
             Status = TicketStatus.ToDo,
+            CreatedByUserId = _userContext.UserId,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };

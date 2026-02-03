@@ -92,7 +92,9 @@ public class SkillService : ISkillService
 
     public async Task<SkillListResponse> GetSkillsAsync(Guid? organizationId, Guid? projectId, string? category, bool? publishedOnly, CancellationToken cancellationToken = default)
     {
-        IQueryable<Skill> query = _context.Skills.AsNoTracking();
+        IQueryable<Skill> query = _context.Skills
+            .Include(s => s.Project)
+            .AsNoTracking();
 
         if (organizationId.HasValue && projectId.HasValue)
         {
@@ -229,6 +231,7 @@ public class SkillService : ISkillService
             Description = skill.Description,
             Category = skill.Category.ToString(),
             Scope = skill.OrganizationId.HasValue ? "Organization" : "Project",
+            ProjectName = skill.Project?.Name,
             IsPublished = skill.IsPublished
         };
     }

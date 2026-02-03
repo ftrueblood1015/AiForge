@@ -26,6 +26,7 @@ public class SkillChainSummaryDto
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string Scope { get; set; } = string.Empty;
+    public string? ProjectName { get; set; }
     public bool IsPublished { get; set; }
     public int LinkCount { get; set; }
     public int ExecutionCount { get; set; }

@@ -4,6 +4,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AiForge.Api.Middleware;
 
+/// <summary>
+/// Middleware that handles API Key authentication for service accounts (MCP).
+/// This runs AFTER the JWT authentication middleware, so if a user is already
+/// authenticated via JWT, this middleware just passes through.
+/// </summary>
 public class ApiKeyAuthMiddleware
 {
     private readonly RequestDelegate _next;
@@ -13,7 +18,8 @@ public class ApiKeyAuthMiddleware
     {
         "/health",
         "/swagger",
-        "/favicon.ico"
+        "/favicon.ico",
+        "/api/auth"  // Auth endpoints don't require authentication
     };
 
     public ApiKeyAuthMiddleware(RequestDelegate next)
@@ -26,6 +32,13 @@ public class ApiKeyAuthMiddleware
         // Skip auth for excluded paths
         var path = context.Request.Path.Value?.ToLower() ?? "";
         if (ExcludedPaths.Any(p => path.StartsWith(p)))
+        {
+            await _next(context);
+            return;
+        }
+
+        // If already authenticated via JWT, skip API key check
+        if (context.User.Identity?.IsAuthenticated == true)
         {
             await _next(context);
             return;

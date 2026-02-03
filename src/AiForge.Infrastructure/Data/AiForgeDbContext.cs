@@ -1,9 +1,12 @@
 using AiForge.Domain.Entities;
+using AiForge.Infrastructure.Identity;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace AiForge.Infrastructure.Data;
 
-public class AiForgeDbContext : DbContext
+public class AiForgeDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
 {
     public AiForgeDbContext(DbContextOptions<AiForgeDbContext> options) : base(options)
     {
@@ -39,6 +42,11 @@ public class AiForgeDbContext : DbContext
     public DbSet<SkillChainLinkExecution> SkillChainLinkExecutions => Set<SkillChainLinkExecution>();
     public DbSet<SessionState> SessionStates => Set<SessionState>();
     public DbSet<ExecutionCheckpoint> ExecutionCheckpoints => Set<ExecutionCheckpoint>();
+
+    // Auth & Organization entities
+    public DbSet<Organization> Organizations => Set<Organization>();
+    public DbSet<OrganizationMember> OrganizationMembers => Set<OrganizationMember>();
+    public DbSet<ProjectMember> ProjectMembers => Set<ProjectMember>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

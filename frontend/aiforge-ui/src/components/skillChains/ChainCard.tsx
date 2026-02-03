@@ -151,7 +151,7 @@ export default function ChainCard({
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
           <Chip
             icon={chain.scope === 'Organization' ? <OrgIcon fontSize="small" /> : <ProjectIcon fontSize="small" />}
-            label={chain.scope}
+            label={chain.scope === 'Organization' ? 'Organization' : chain.projectName || 'Project'}
             size="small"
             variant="outlined"
             sx={{ height: 24, fontSize: '0.7rem' }}

@@ -144,6 +144,7 @@ public class SkillChainService : ISkillChainService
         }
 
         var chains = await query
+            .Include(sc => sc.Project)
             .Include(sc => sc.Links)
             .Include(sc => sc.Executions)
             .OrderBy(sc => sc.Name)
@@ -447,6 +448,7 @@ public class SkillChainService : ISkillChainService
             Name = chain.Name,
             Description = chain.Description,
             Scope = chain.OrganizationId.HasValue ? "Organization" : "Project",
+            ProjectName = chain.Project?.Name,
             IsPublished = chain.IsPublished,
             LinkCount = chain.Links.Count,
             ExecutionCount = chain.Executions.Count,

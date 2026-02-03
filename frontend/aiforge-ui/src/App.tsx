@@ -3,6 +3,11 @@ import { Routes, Route } from 'react-router-dom';
 import { Box, CircularProgress } from '@mui/material';
 import { AppLayout } from './components/layout';
 import { PageErrorBoundary } from './components/common';
+import { ProtectedRoute } from './components/auth';
+
+// Auth pages (not lazy loaded for fast initial render)
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
 
 // Lazy load pages for code splitting
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -42,7 +47,26 @@ function PageLoader() {
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<AppLayout />} errorElement={<PageErrorBoundary />}>
+      {/* Public auth routes */}
+      <Route
+        path="/login"
+        element={
+          <Suspense fallback={<PageLoader />}>
+            <Login />
+          </Suspense>
+        }
+      />
+      <Route
+        path="/register"
+        element={
+          <Suspense fallback={<PageLoader />}>
+            <Register />
+          </Suspense>
+        }
+      />
+
+      {/* Protected routes */}
+      <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>} errorElement={<PageErrorBoundary />}>
         <Route
           index
           element={

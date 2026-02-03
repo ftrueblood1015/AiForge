@@ -26,6 +26,7 @@ public class SkillListItemDto
     public string? Description { get; set; }
     public string Category { get; set; } = string.Empty;
     public string Scope { get; set; } = string.Empty;
+    public string? ProjectName { get; set; }
     public bool IsPublished { get; set; }
 }
 

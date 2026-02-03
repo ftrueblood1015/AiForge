@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   AppBar,
   Toolbar,
@@ -6,14 +8,24 @@ import {
   Box,
   Avatar,
   Tooltip,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+  Typography,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
   Search as SearchIcon,
   Notifications as NotificationsIcon,
   Keyboard as KeyboardIcon,
+  Logout as LogoutIcon,
+  Settings as SettingsIcon,
+  Person as PersonIcon,
 } from '@mui/icons-material';
 import { alpha, styled } from '@mui/material/styles';
+import { useAuthStore } from '../../stores/authStore';
 
 const DRAWER_WIDTH = 240;
 
@@ -67,6 +79,40 @@ interface HeaderProps {
 }
 
 export default function Header({ sidebarOpen, onToggleSidebar, onShowShortcuts }: HeaderProps) {
+  const navigate = useNavigate();
+  const { user, logout } = useAuthStore();
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const menuOpen = Boolean(anchorEl);
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = async () => {
+    handleMenuClose();
+    await logout();
+    navigate('/login');
+  };
+
+  const handleSettings = () => {
+    handleMenuClose();
+    navigate('/settings');
+  };
+
+  // Get user initials for avatar
+  const getInitials = () => {
+    if (!user?.displayName) return 'U';
+    const names = user.displayName.split(' ');
+    if (names.length >= 2) {
+      return `${names[0][0]}${names[1][0]}`.toUpperCase();
+    }
+    return user.displayName[0].toUpperCase();
+  };
+
   return (
     <AppBar
       position="fixed"
@@ -120,11 +166,59 @@ export default function Header({ sidebarOpen, onToggleSidebar, onShowShortcuts }
             </IconButton>
           </Tooltip>
           <Tooltip title="Account">
-            <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
-              U
-            </Avatar>
+            <IconButton
+              onClick={handleMenuOpen}
+              size="small"
+              aria-controls={menuOpen ? 'account-menu' : undefined}
+              aria-haspopup="true"
+              aria-expanded={menuOpen ? 'true' : undefined}
+            >
+              <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
+                {getInitials()}
+              </Avatar>
+            </IconButton>
           </Tooltip>
         </Box>
+
+        {/* User Menu */}
+        <Menu
+          id="account-menu"
+          anchorEl={anchorEl}
+          open={menuOpen}
+          onClose={handleMenuClose}
+          transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+          anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+          PaperProps={{
+            sx: { minWidth: 200, mt: 1 },
+          }}
+        >
+          <Box sx={{ px: 2, py: 1 }}>
+            <Typography variant="subtitle2">{user?.displayName || 'User'}</Typography>
+            <Typography variant="body2" color="text.secondary">
+              {user?.email}
+            </Typography>
+          </Box>
+          <Divider />
+          <MenuItem onClick={handleSettings}>
+            <ListItemIcon>
+              <SettingsIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Settings</ListItemText>
+          </MenuItem>
+          <MenuItem onClick={handleMenuClose}>
+            <ListItemIcon>
+              <PersonIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Profile</ListItemText>
+          </MenuItem>
+          <Divider />
+          <MenuItem onClick={handleLogout}>
+            <ListItemIcon>
+              <LogoutIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Sign out</ListItemText>
+          </MenuItem>
+        </Menu>
       </Toolbar>
     </AppBar>
   );
