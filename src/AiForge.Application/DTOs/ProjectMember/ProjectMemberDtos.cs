@@ -12,6 +12,7 @@ public class ProjectMemberDto
     public ProjectRole Role { get; set; }
     public DateTime AddedAt { get; set; }
     public Guid? AddedByUserId { get; set; }
+    public string? AddedByUserName { get; set; }
 }
 
 public class AddProjectMemberRequest
@@ -23,4 +24,14 @@ public class AddProjectMemberRequest
 public class UpdateProjectMemberRoleRequest
 {
     public ProjectRole Role { get; set; }
+}
+
+/// <summary>
+/// Lightweight DTO for user search results when adding project members
+/// </summary>
+public class UserSearchResultDto
+{
+    public Guid Id { get; set; }
+    public string Email { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
 }

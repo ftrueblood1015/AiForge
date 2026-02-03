@@ -63,6 +63,36 @@ export interface Project {
   updatedAt: string;
 }
 
+// Project Member Types
+export type ProjectRole = 'Viewer' | 'Member' | 'Owner';
+
+export interface ProjectMember {
+  id: string;
+  projectId: string;
+  userId: string;
+  email: string;
+  displayName: string;
+  role: ProjectRole;
+  addedAt: string;
+  addedByUserId: string | null;
+  addedByUserName: string | null;
+}
+
+export interface AddProjectMemberRequest {
+  email: string;
+  role?: ProjectRole;
+}
+
+export interface UpdateProjectMemberRoleRequest {
+  role: ProjectRole;
+}
+
+export interface UserSearchResult {
+  id: string;
+  email: string;
+  displayName: string;
+}
+
 export interface Ticket {
   id: string;
   projectId: string;

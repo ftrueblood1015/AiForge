@@ -128,7 +128,9 @@
       "Bash(dotnet run:*)",
       "Bash(powershell -Command \"Get-Content ''C:\\\\Users\\\\ftrue\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-ftrue-source-repos-AiForge\\\\tasks\\\\b49fcbc.output'' | Select-Object -Last 50\")",
       "Bash(powershell -Command:*)",
-      "Bash(git diff:*)"
+      "Bash(git diff:*)",
+      "mcp__aiforge__aiforge_get_context",
+      "mcp__aiforge__list_chain_executions"
     ]
   },
   "enableAllProjectMcpServers": true,

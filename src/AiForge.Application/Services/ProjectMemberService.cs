@@ -18,6 +18,26 @@ public interface IProjectMemberService
     Task<bool> HasRoleAsync(Guid projectId, Guid userId, ProjectRole minimumRole, CancellationToken cancellationToken = default);
     Task<IEnumerable<Guid>> GetAccessibleProjectIdsAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<bool> AddOwnerAsync(Guid projectId, Guid userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get the current user's role in a project, or null if not a member.
+    /// </summary>
+    Task<ProjectRole?> GetUserRoleAsync(Guid projectId, Guid userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Check if user is a project Owner (convenience method).
+    /// </summary>
+    Task<bool> IsOwnerAsync(Guid projectId, Guid userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Search users by email or display name, optionally excluding those already in a project.
+    /// </summary>
+    Task<IEnumerable<UserSearchResultDto>> SearchUsersAsync(string query, Guid? excludeProjectId = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Count the number of Owners in a project (used for last-owner protection).
+    /// </summary>
+    Task<int> GetOwnerCountAsync(Guid projectId, CancellationToken cancellationToken = default);
 }
 
 public class ProjectMemberService : IProjectMemberService
@@ -37,7 +57,12 @@ public class ProjectMemberService : IProjectMemberService
             .Where(m => m.ProjectId == projectId)
             .ToListAsync(cancellationToken);
 
-        var userIds = members.Select(m => m.UserId).ToList();
+        // Get all user IDs (members + those who added them)
+        var userIds = members.Select(m => m.UserId)
+            .Union(members.Where(m => m.AddedByUserId.HasValue).Select(m => m.AddedByUserId!.Value))
+            .Distinct()
+            .ToList();
+
         var users = await _context.Users
             .Where(u => userIds.Contains(u.Id))
             .ToDictionaryAsync(u => u.Id, cancellationToken);
@@ -51,7 +76,10 @@ public class ProjectMemberService : IProjectMemberService
             DisplayName = users.TryGetValue(m.UserId, out var u) ? u.DisplayName ?? "" : "",
             Role = m.Role,
             AddedAt = m.AddedAt,
-            AddedByUserId = m.AddedByUserId
+            AddedByUserId = m.AddedByUserId,
+            AddedByUserName = m.AddedByUserId.HasValue && users.TryGetValue(m.AddedByUserId.Value, out var addedByUser)
+                ? addedByUser.DisplayName
+                : null
         });
     }
 
@@ -63,6 +91,12 @@ public class ProjectMemberService : IProjectMemberService
         if (member == null) return null;
 
         var user = await _context.Users.FindAsync([userId], cancellationToken);
+        string? addedByUserName = null;
+        if (member.AddedByUserId.HasValue)
+        {
+            var addedByUser = await _context.Users.FindAsync([member.AddedByUserId.Value], cancellationToken);
+            addedByUserName = addedByUser?.DisplayName;
+        }
 
         return new ProjectMemberDto
         {
@@ -73,7 +107,8 @@ public class ProjectMemberService : IProjectMemberService
             DisplayName = user?.DisplayName ?? "",
             Role = member.Role,
             AddedAt = member.AddedAt,
-            AddedByUserId = member.AddedByUserId
+            AddedByUserId = member.AddedByUserId,
+            AddedByUserName = addedByUserName
         };
     }
 
@@ -130,6 +165,13 @@ public class ProjectMemberService : IProjectMemberService
 
         if (membership == null) return false;
 
+        // Prevent removing the last Owner
+        if (membership.Role == ProjectRole.Owner)
+        {
+            var ownerCount = await GetOwnerCountAsync(projectId, cancellationToken);
+            if (ownerCount <= 1) return false;
+        }
+
         _context.ProjectMembers.Remove(membership);
         await _context.SaveChangesAsync(cancellationToken);
         return true;
@@ -141,6 +183,13 @@ public class ProjectMemberService : IProjectMemberService
             .FirstOrDefaultAsync(m => m.ProjectId == projectId && m.UserId == userId, cancellationToken);
 
         if (membership == null) return false;
+
+        // Prevent demoting the last Owner
+        if (membership.Role == ProjectRole.Owner && newRole != ProjectRole.Owner)
+        {
+            var ownerCount = await GetOwnerCountAsync(projectId, cancellationToken);
+            if (ownerCount <= 1) return false;
+        }
 
         membership.Role = newRole;
         await _context.SaveChangesAsync(cancellationToken);
@@ -191,5 +240,63 @@ public class ProjectMemberService : IProjectMemberService
             .Where(m => m.UserId == userId)
             .Select(m => m.ProjectId)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<ProjectRole?> GetUserRoleAsync(Guid projectId, Guid userId, CancellationToken cancellationToken = default)
+    {
+        var member = await _context.ProjectMembers
+            .FirstOrDefaultAsync(m => m.ProjectId == projectId && m.UserId == userId, cancellationToken);
+
+        return member?.Role;
+    }
+
+    public async Task<bool> IsOwnerAsync(Guid projectId, Guid userId, CancellationToken cancellationToken = default)
+    {
+        // Service accounts and admins are treated as owners for authorization purposes
+        if (_userContext.IsServiceAccount || _userContext.IsAdmin) return true;
+
+        var role = await GetUserRoleAsync(projectId, userId, cancellationToken);
+        return role == ProjectRole.Owner;
+    }
+
+    public async Task<IEnumerable<UserSearchResultDto>> SearchUsersAsync(string query, Guid? excludeProjectId = null, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(query) || query.Length < 2)
+            return [];
+
+        var normalizedQuery = query.ToLower();
+
+        var usersQuery = _context.Users
+            .Where(u => u.IsActive)
+            .Where(u => (u.Email != null && u.Email.ToLower().Contains(normalizedQuery)) ||
+                        u.DisplayName.ToLower().Contains(normalizedQuery));
+
+        // Exclude users already in the specified project
+        if (excludeProjectId.HasValue)
+        {
+            var existingMemberIds = _context.ProjectMembers
+                .Where(m => m.ProjectId == excludeProjectId.Value)
+                .Select(m => m.UserId);
+
+            usersQuery = usersQuery.Where(u => !existingMemberIds.Contains(u.Id));
+        }
+
+        var users = await usersQuery
+            .Take(20)
+            .Select(u => new UserSearchResultDto
+            {
+                Id = u.Id,
+                Email = u.Email ?? "",
+                DisplayName = u.DisplayName
+            })
+            .ToListAsync(cancellationToken);
+
+        return users;
+    }
+
+    public async Task<int> GetOwnerCountAsync(Guid projectId, CancellationToken cancellationToken = default)
+    {
+        return await _context.ProjectMembers
+            .CountAsync(m => m.ProjectId == projectId && m.Role == ProjectRole.Owner, cancellationToken);
     }
 }

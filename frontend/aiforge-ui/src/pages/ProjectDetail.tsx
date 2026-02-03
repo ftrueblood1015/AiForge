@@ -29,6 +29,7 @@ import {
 import { useProjectStore } from '../stores/projectStore';
 import { useTicketStore } from '../stores/ticketStore';
 import { TicketBoard } from '../components/tickets';
+import { ProjectMembersSection } from '../components/project';
 import type { Ticket, TicketType, TicketStatus, Priority } from '../types';
 
 export default function ProjectDetail() {
@@ -176,6 +177,9 @@ export default function ProjectDetail() {
           </Button>
         </Box>
       </Box>
+
+      {/* Project Members */}
+      <ProjectMembersSection projectId={currentProject.id} />
 
       {/* Ticket Board / List */}
       {viewMode === 'kanban' ? (
