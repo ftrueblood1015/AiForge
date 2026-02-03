@@ -127,7 +127,8 @@
       "mcp__aiforge__aiforge_get_queue_items",
       "Bash(dotnet run:*)",
       "Bash(powershell -Command \"Get-Content ''C:\\\\Users\\\\ftrue\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-ftrue-source-repos-AiForge\\\\tasks\\\\b49fcbc.output'' | Select-Object -Last 50\")",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "Bash(git diff:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

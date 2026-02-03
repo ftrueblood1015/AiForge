@@ -1,4 +1,6 @@
 using AiForge.Application.DTOs.TechnicalDebt;
+using AiForge.Application.Extensions;
+using AiForge.Application.Interfaces;
 using AiForge.Domain.Entities;
 using AiForge.Domain.Enums;
 using AiForge.Domain.Interfaces;
@@ -22,15 +24,21 @@ public class TechnicalDebtService : ITechnicalDebtService
     private readonly ITechnicalDebtRepository _debtRepository;
     private readonly ITicketRepository _ticketRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IUserContext _userContext;
+    private readonly IProjectMemberService _projectMemberService;
 
     public TechnicalDebtService(
         ITechnicalDebtRepository debtRepository,
         ITicketRepository ticketRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IUserContext userContext,
+        IProjectMemberService projectMemberService)
     {
         _debtRepository = debtRepository;
         _ticketRepository = ticketRepository;
         _unitOfWork = unitOfWork;
+        _userContext = userContext;
+        _projectMemberService = projectMemberService;
     }
 
     public async Task<TechnicalDebtDto> FlagDebtAsync(Guid ticketId, CreateDebtRequest request, CancellationToken cancellationToken = default)
@@ -132,6 +140,12 @@ public class TechnicalDebtService : ITechnicalDebtService
         }
 
         var originatingTicket = await _ticketRepository.GetByIdAsync(debt.OriginatingTicketId, cancellationToken);
+
+        // Check project access
+        var accessibleProjects = await _projectMemberService.GetAccessibleProjectIdsOrNullAsync(_userContext, cancellationToken);
+        if (accessibleProjects != null && originatingTicket != null && !accessibleProjects.Contains(originatingTicket.ProjectId))
+            return null;
+
         var resolutionTicket = debt.ResolutionTicketId.HasValue
             ? await _ticketRepository.GetByIdAsync(debt.ResolutionTicketId.Value, cancellationToken)
             : null;
@@ -157,6 +171,15 @@ public class TechnicalDebtService : ITechnicalDebtService
         var debts = await _debtRepository.GetBacklogAsync(statusEnum, categoryEnum, severityEnum, cancellationToken);
         var debtList = debts.ToList();
 
+        // Filter by accessible projects
+        var accessibleProjects = await _projectMemberService.GetAccessibleProjectIdsOrNullAsync(_userContext, cancellationToken);
+        if (accessibleProjects != null)
+        {
+            debtList = debtList.Where(d =>
+                d.OriginatingTicket != null &&
+                accessibleProjects.Contains(d.OriginatingTicket.ProjectId)).ToList();
+        }
+
         return new DebtBacklogResponse
         {
             Items = debtList.Select(d => MapToDto(d, d.OriginatingTicket?.Key, d.ResolutionTicket?.Key)).ToList(),
@@ -166,12 +189,41 @@ public class TechnicalDebtService : ITechnicalDebtService
 
     public async Task<IEnumerable<TechnicalDebtDto>> GetDebtByTicketAsync(Guid ticketId, CancellationToken cancellationToken = default)
     {
+        // Check project access via ticket
+        var ticket = await _ticketRepository.GetByIdAsync(ticketId, cancellationToken);
+        if (ticket == null) return Enumerable.Empty<TechnicalDebtDto>();
+
+        var accessibleProjects = await _projectMemberService.GetAccessibleProjectIdsOrNullAsync(_userContext, cancellationToken);
+        if (accessibleProjects != null && !accessibleProjects.Contains(ticket.ProjectId))
+            return Enumerable.Empty<TechnicalDebtDto>();
+
         var debts = await _debtRepository.GetByTicketIdAsync(ticketId, cancellationToken);
         return debts.Select(d => MapToDto(d, d.OriginatingTicket?.Key, d.ResolutionTicket?.Key));
     }
 
     public async Task<DebtSummaryResponse> GetDebtSummaryAsync(CancellationToken cancellationToken = default)
     {
+        var accessibleProjects = await _projectMemberService.GetAccessibleProjectIdsOrNullAsync(_userContext, cancellationToken);
+
+        // If filtering is needed, get filtered summary via backlog
+        if (accessibleProjects != null)
+        {
+            var debts = await _debtRepository.GetBacklogAsync(null, null, null, cancellationToken);
+            var filteredDebts = debts.Where(d =>
+                d.OriginatingTicket != null &&
+                accessibleProjects.Contains(d.OriginatingTicket.ProjectId)).ToList();
+
+            return new DebtSummaryResponse
+            {
+                TotalOpen = filteredDebts.Count(d => d.Status == DebtStatus.Open),
+                TotalResolved = filteredDebts.Count(d => d.Status == DebtStatus.Resolved),
+                ByCategory = filteredDebts.GroupBy(d => d.Category.ToString())
+                    .ToDictionary(g => g.Key, g => g.Count()),
+                BySeverity = filteredDebts.GroupBy(d => d.Severity.ToString())
+                    .ToDictionary(g => g.Key, g => g.Count())
+            };
+        }
+
         var summary = await _debtRepository.GetSummaryAsync(cancellationToken);
 
         return new DebtSummaryResponse

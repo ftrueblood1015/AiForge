@@ -1,5 +1,7 @@
 using System.Text.Json;
 using AiForge.Application.DTOs.Agent;
+using AiForge.Application.Extensions;
+using AiForge.Application.Interfaces;
 using AiForge.Domain.Entities;
 using AiForge.Domain.Enums;
 using AiForge.Domain.Interfaces;
@@ -23,12 +25,21 @@ public class AgentService : IAgentService
     private readonly AiForgeDbContext _context;
     private readonly IScopeResolver _scopeResolver;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IUserContext _userContext;
+    private readonly IProjectMemberService _projectMemberService;
 
-    public AgentService(AiForgeDbContext context, IScopeResolver scopeResolver, IUnitOfWork unitOfWork)
+    public AgentService(
+        AiForgeDbContext context,
+        IScopeResolver scopeResolver,
+        IUnitOfWork unitOfWork,
+        IUserContext userContext,
+        IProjectMemberService projectMemberService)
     {
         _context = context;
         _scopeResolver = scopeResolver;
         _unitOfWork = unitOfWork;
+        _userContext = userContext;
+        _projectMemberService = projectMemberService;
     }
 
     public async Task<AgentDto> CreateAgentAsync(CreateAgentRequest request, string createdBy, CancellationToken cancellationToken = default)
@@ -83,7 +94,14 @@ public class AgentService : IAgentService
             .AsNoTracking()
             .FirstOrDefaultAsync(a => a.Id == agentId, cancellationToken);
 
-        return agent != null ? MapToDto(agent) : null;
+        if (agent == null) return null;
+
+        // Check project access (org-level agents are visible to all)
+        var accessibleProjects = await _projectMemberService.GetAccessibleProjectIdsOrNullAsync(_userContext, cancellationToken);
+        if (accessibleProjects != null && agent.ProjectId.HasValue && !accessibleProjects.Contains(agent.ProjectId.Value))
+            return null;
+
+        return MapToDto(agent);
     }
 
     public async Task<AgentDto?> GetAgentByKeyAsync(string agentKey, Guid? projectId, Guid organizationId, CancellationToken cancellationToken = default)
@@ -94,9 +112,20 @@ public class AgentService : IAgentService
 
     public async Task<AgentListResponse> GetAgentsAsync(Guid? organizationId, Guid? projectId, string? agentType = null, string? status = null, bool? isEnabled = null, CancellationToken cancellationToken = default)
     {
+        var accessibleProjects = await _projectMemberService.GetAccessibleProjectIdsOrNullAsync(_userContext, cancellationToken);
+
         IQueryable<Agent> query = _context.Agents
             .Include(a => a.Project)
             .AsNoTracking();
+
+        // Apply project access filtering
+        if (accessibleProjects != null)
+        {
+            // User can see:
+            // 1. Organization-level agents (ProjectId is null)
+            // 2. Project-level agents for their accessible projects
+            query = query.Where(a => a.ProjectId == null || accessibleProjects.Contains(a.ProjectId.Value));
+        }
 
         if (organizationId.HasValue && projectId.HasValue)
         {

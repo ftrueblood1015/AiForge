@@ -2,6 +2,8 @@ using AiForge.Application.DTOs.Analytics.Confidence;
 using AiForge.Application.DTOs.Analytics.Dashboard;
 using AiForge.Application.DTOs.Analytics.Patterns;
 using AiForge.Application.DTOs.Analytics.Sessions;
+using AiForge.Application.Extensions;
+using AiForge.Application.Interfaces;
 using AiForge.Domain.Entities;
 using AiForge.Domain.Enums;
 using AiForge.Domain.Interfaces;
@@ -41,17 +43,23 @@ public class AnalyticsService : IAnalyticsService
     private readonly ISessionMetricsRepository _sessionMetricsRepository;
     private readonly ITicketRepository _ticketRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IUserContext _userContext;
+    private readonly IProjectMemberService _projectMemberService;
 
     public AnalyticsService(
         AiForgeDbContext context,
         ISessionMetricsRepository sessionMetricsRepository,
         ITicketRepository ticketRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IUserContext userContext,
+        IProjectMemberService projectMemberService)
     {
         _context = context;
         _sessionMetricsRepository = sessionMetricsRepository;
         _ticketRepository = ticketRepository;
         _unitOfWork = unitOfWork;
+        _userContext = userContext;
+        _projectMemberService = projectMemberService;
     }
 
     #region Confidence Tracking
@@ -60,13 +68,29 @@ public class AnalyticsService : IAnalyticsService
         LowConfidenceDecisionRequest request,
         CancellationToken cancellationToken = default)
     {
+        var accessibleProjects = await _projectMemberService.GetAccessibleProjectIdsOrNullAsync(_userContext, cancellationToken);
+
         var query = _context.ReasoningLogs
             .Include(r => r.Ticket)
             .ThenInclude(t => t.Project)
             .Where(r => r.ConfidencePercent.HasValue && r.ConfidencePercent < request.ConfidenceThreshold)
             .AsQueryable();
 
-        if (request.ProjectId.HasValue)
+        // Apply project access filtering
+        if (accessibleProjects != null)
+        {
+            if (request.ProjectId.HasValue)
+            {
+                if (!accessibleProjects.Contains(request.ProjectId.Value))
+                    return new List<LowConfidenceDecisionDto>();
+                query = query.Where(r => r.Ticket.ProjectId == request.ProjectId.Value);
+            }
+            else
+            {
+                query = query.Where(r => accessibleProjects.Contains(r.Ticket.ProjectId));
+            }
+        }
+        else if (request.ProjectId.HasValue)
         {
             query = query.Where(r => r.Ticket.ProjectId == request.ProjectId.Value);
         }
@@ -101,12 +125,28 @@ public class AnalyticsService : IAnalyticsService
         ConfidenceTrendRequest request,
         CancellationToken cancellationToken = default)
     {
+        var accessibleProjects = await _projectMemberService.GetAccessibleProjectIdsOrNullAsync(_userContext, cancellationToken);
+
         var query = _context.ReasoningLogs
             .Include(r => r.Ticket)
             .Where(r => r.ConfidencePercent.HasValue)
             .AsQueryable();
 
-        if (request.ProjectId.HasValue)
+        // Apply project access filtering
+        if (accessibleProjects != null)
+        {
+            if (request.ProjectId.HasValue)
+            {
+                if (!accessibleProjects.Contains(request.ProjectId.Value))
+                    return new ConfidenceTrendDto { DataPoints = new List<ConfidenceTrendPoint>() };
+                query = query.Where(r => r.Ticket.ProjectId == request.ProjectId.Value);
+            }
+            else
+            {
+                query = query.Where(r => accessibleProjects.Contains(r.Ticket.ProjectId));
+            }
+        }
+        else if (request.ProjectId.HasValue)
         {
             query = query.Where(r => r.Ticket.ProjectId == request.ProjectId.Value);
         }
@@ -152,13 +192,29 @@ public class AnalyticsService : IAnalyticsService
         TicketConfidenceSummaryRequest request,
         CancellationToken cancellationToken = default)
     {
+        var accessibleProjects = await _projectMemberService.GetAccessibleProjectIdsOrNullAsync(_userContext, cancellationToken);
+
         var query = _context.ReasoningLogs
             .Include(r => r.Ticket)
             .ThenInclude(t => t.Project)
             .Where(r => r.ConfidencePercent.HasValue)
             .AsQueryable();
 
-        if (request.ProjectId.HasValue)
+        // Apply project access filtering
+        if (accessibleProjects != null)
+        {
+            if (request.ProjectId.HasValue)
+            {
+                if (!accessibleProjects.Contains(request.ProjectId.Value))
+                    return new List<TicketConfidenceSummaryDto>();
+                query = query.Where(r => r.Ticket.ProjectId == request.ProjectId.Value);
+            }
+            else
+            {
+                query = query.Where(r => accessibleProjects.Contains(r.Ticket.ProjectId));
+            }
+        }
+        else if (request.ProjectId.HasValue)
         {
             query = query.Where(r => r.Ticket.ProjectId == request.ProjectId.Value);
         }
@@ -204,12 +260,28 @@ public class AnalyticsService : IAnalyticsService
         HotFileRequest request,
         CancellationToken cancellationToken = default)
     {
+        var accessibleProjects = await _projectMemberService.GetAccessibleProjectIdsOrNullAsync(_userContext, cancellationToken);
+
         var query = _context.FileChanges
             .Include(f => f.Ticket)
             .ThenInclude(t => t.Project)
             .AsQueryable();
 
-        if (request.ProjectId.HasValue)
+        // Apply project access filtering
+        if (accessibleProjects != null)
+        {
+            if (request.ProjectId.HasValue)
+            {
+                if (!accessibleProjects.Contains(request.ProjectId.Value))
+                    return new List<AnalyticsHotFileDto>();
+                query = query.Where(f => f.Ticket.ProjectId == request.ProjectId.Value);
+            }
+            else
+            {
+                query = query.Where(f => accessibleProjects.Contains(f.Ticket.ProjectId));
+            }
+        }
+        else if (request.ProjectId.HasValue)
         {
             query = query.Where(f => f.Ticket.ProjectId == request.ProjectId.Value);
         }
@@ -295,12 +367,28 @@ public class AnalyticsService : IAnalyticsService
         RecurringIssueRequest request,
         CancellationToken cancellationToken = default)
     {
+        var accessibleProjects = await _projectMemberService.GetAccessibleProjectIdsOrNullAsync(_userContext, cancellationToken);
+
         var query = _context.Tickets
             .Include(t => t.Project)
             .Where(t => t.Type == TicketType.Bug)
             .AsQueryable();
 
-        if (request.ProjectId.HasValue)
+        // Apply project access filtering
+        if (accessibleProjects != null)
+        {
+            if (request.ProjectId.HasValue)
+            {
+                if (!accessibleProjects.Contains(request.ProjectId.Value))
+                    return new List<RecurringIssueDto>();
+                query = query.Where(t => t.ProjectId == request.ProjectId.Value);
+            }
+            else
+            {
+                query = query.Where(t => accessibleProjects.Contains(t.ProjectId));
+            }
+        }
+        else if (request.ProjectId.HasValue)
         {
             query = query.Where(t => t.ProjectId == request.ProjectId.Value);
         }
@@ -360,12 +448,28 @@ public class AnalyticsService : IAnalyticsService
         DebtPatternRequest request,
         CancellationToken cancellationToken = default)
     {
+        var accessibleProjects = await _projectMemberService.GetAccessibleProjectIdsOrNullAsync(_userContext, cancellationToken);
+
         var query = _context.TechnicalDebts
             .Include(d => d.OriginatingTicket)
             .ThenInclude(t => t.Project)
             .AsQueryable();
 
-        if (request.ProjectId.HasValue)
+        // Apply project access filtering
+        if (accessibleProjects != null)
+        {
+            if (request.ProjectId.HasValue)
+            {
+                if (!accessibleProjects.Contains(request.ProjectId.Value))
+                    return new DebtPatternSummaryDto { ByCategory = new(), BySeverity = new(), TopHotspots = new() };
+                query = query.Where(d => d.OriginatingTicket.ProjectId == request.ProjectId.Value);
+            }
+            else
+            {
+                query = query.Where(d => accessibleProjects.Contains(d.OriginatingTicket.ProjectId));
+            }
+        }
+        else if (request.ProjectId.HasValue)
         {
             query = query.Where(d => d.OriginatingTicket.ProjectId == request.ProjectId.Value);
         }
@@ -581,6 +685,8 @@ public class AnalyticsService : IAnalyticsService
         ProductivityMetricsRequest request,
         CancellationToken cancellationToken = default)
     {
+        var accessibleProjects = await _projectMemberService.GetAccessibleProjectIdsOrNullAsync(_userContext, cancellationToken);
+
         var ticketQuery = _context.Tickets
             .Include(t => t.Project)
             .Where(t => t.Status == TicketStatus.Done)
@@ -590,7 +696,23 @@ public class AnalyticsService : IAnalyticsService
             .Include(s => s.Ticket)
             .AsQueryable();
 
-        if (request.ProjectId.HasValue)
+        // Apply project access filtering
+        if (accessibleProjects != null)
+        {
+            if (request.ProjectId.HasValue)
+            {
+                if (!accessibleProjects.Contains(request.ProjectId.Value))
+                    return new ProductivityMetricsDto { ByTicketType = new(), DailyTrend = new() };
+                ticketQuery = ticketQuery.Where(t => t.ProjectId == request.ProjectId.Value);
+                sessionQuery = sessionQuery.Where(s => s.Ticket.ProjectId == request.ProjectId.Value);
+            }
+            else
+            {
+                ticketQuery = ticketQuery.Where(t => accessibleProjects.Contains(t.ProjectId));
+                sessionQuery = sessionQuery.Where(s => accessibleProjects.Contains(s.Ticket.ProjectId));
+            }
+        }
+        else if (request.ProjectId.HasValue)
         {
             ticketQuery = ticketQuery.Where(t => t.ProjectId == request.ProjectId.Value);
             sessionQuery = sessionQuery.Where(s => s.Ticket.ProjectId == request.ProjectId.Value);
@@ -676,18 +798,39 @@ public class AnalyticsService : IAnalyticsService
         AnalyticsDashboardRequest request,
         CancellationToken cancellationToken = default)
     {
+        var accessibleProjects = await _projectMemberService.GetAccessibleProjectIdsOrNullAsync(_userContext, cancellationToken);
+
         var ticketQuery = _context.Tickets.AsQueryable();
         var sessionQuery = _context.SessionMetrics.Include(s => s.Ticket).AsQueryable();
         var decisionQuery = _context.ReasoningLogs.Include(r => r.Ticket).AsQueryable();
-        var debtQuery = _context.TechnicalDebts.AsQueryable();
+        var debtQuery = _context.TechnicalDebts.Include(d => d.OriginatingTicket).AsQueryable();
 
-        if (request.ProjectId.HasValue)
+        // Apply project access filtering
+        if (accessibleProjects != null)
+        {
+            if (request.ProjectId.HasValue)
+            {
+                if (!accessibleProjects.Contains(request.ProjectId.Value))
+                    return new AnalyticsDashboardDto { RecentLowConfidenceDecisions = new(), TopHotFiles = new(), RecentActivity = new(), GeneratedAt = DateTime.UtcNow };
+                ticketQuery = ticketQuery.Where(t => t.ProjectId == request.ProjectId.Value);
+                sessionQuery = sessionQuery.Where(s => s.Ticket.ProjectId == request.ProjectId.Value);
+                decisionQuery = decisionQuery.Where(r => r.Ticket.ProjectId == request.ProjectId.Value);
+                debtQuery = debtQuery.Where(d => d.OriginatingTicket.ProjectId == request.ProjectId.Value);
+            }
+            else
+            {
+                ticketQuery = ticketQuery.Where(t => accessibleProjects.Contains(t.ProjectId));
+                sessionQuery = sessionQuery.Where(s => accessibleProjects.Contains(s.Ticket.ProjectId));
+                decisionQuery = decisionQuery.Where(r => accessibleProjects.Contains(r.Ticket.ProjectId));
+                debtQuery = debtQuery.Where(d => accessibleProjects.Contains(d.OriginatingTicket.ProjectId));
+            }
+        }
+        else if (request.ProjectId.HasValue)
         {
             ticketQuery = ticketQuery.Where(t => t.ProjectId == request.ProjectId.Value);
             sessionQuery = sessionQuery.Where(s => s.Ticket.ProjectId == request.ProjectId.Value);
             decisionQuery = decisionQuery.Where(r => r.Ticket.ProjectId == request.ProjectId.Value);
-            debtQuery = debtQuery.Include(d => d.OriginatingTicket)
-                .Where(d => d.OriginatingTicket.ProjectId == request.ProjectId.Value);
+            debtQuery = debtQuery.Where(d => d.OriginatingTicket.ProjectId == request.ProjectId.Value);
         }
 
         if (request.StartDate.HasValue)

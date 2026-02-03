@@ -1,6 +1,8 @@
 using System.Text.Json;
 using AutoMapper;
 using AiForge.Application.DTOs.Handoffs;
+using AiForge.Application.Extensions;
+using AiForge.Application.Interfaces;
 using AiForge.Domain.Entities;
 using AiForge.Domain.Enums;
 using AiForge.Domain.Interfaces;
@@ -26,6 +28,8 @@ public class HandoffService : IHandoffService
     private readonly ITicketRepository _ticketRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly IUserContext _userContext;
+    private readonly IProjectMemberService _projectMemberService;
 
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
@@ -33,35 +37,70 @@ public class HandoffService : IHandoffService
         IHandoffRepository handoffRepository,
         ITicketRepository ticketRepository,
         IUnitOfWork unitOfWork,
-        IMapper mapper)
+        IMapper mapper,
+        IUserContext userContext,
+        IProjectMemberService projectMemberService)
     {
         _handoffRepository = handoffRepository;
         _ticketRepository = ticketRepository;
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _userContext = userContext;
+        _projectMemberService = projectMemberService;
     }
 
     public async Task<HandoffDetailDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var handoff = await _handoffRepository.GetByIdWithDetailsAsync(id, cancellationToken);
-        return handoff == null ? null : MapToDetailDto(handoff);
+        if (handoff == null) return null;
+
+        // Check project access
+        var accessibleProjects = await _projectMemberService.GetAccessibleProjectIdsOrNullAsync(_userContext, cancellationToken);
+        if (accessibleProjects != null && handoff.Ticket != null && !accessibleProjects.Contains(handoff.Ticket.ProjectId))
+            return null;
+
+        return MapToDetailDto(handoff);
     }
 
     public async Task<HandoffDetailDto?> GetLatestActiveByTicketIdAsync(Guid ticketId, CancellationToken cancellationToken = default)
     {
+        // Check project access via ticket
+        var ticket = await _ticketRepository.GetByIdAsync(ticketId, cancellationToken);
+        if (ticket == null) return null;
+
+        var accessibleProjects = await _projectMemberService.GetAccessibleProjectIdsOrNullAsync(_userContext, cancellationToken);
+        if (accessibleProjects != null && !accessibleProjects.Contains(ticket.ProjectId))
+            return null;
+
         var handoff = await _handoffRepository.GetLatestActiveByTicketIdAsync(ticketId, cancellationToken);
         return handoff == null ? null : MapToDetailDto(handoff);
     }
 
     public async Task<IEnumerable<HandoffDto>> GetByTicketIdAsync(Guid ticketId, CancellationToken cancellationToken = default)
     {
+        // Check project access via ticket
+        var ticket = await _ticketRepository.GetByIdAsync(ticketId, cancellationToken);
+        if (ticket == null) return Enumerable.Empty<HandoffDto>();
+
+        var accessibleProjects = await _projectMemberService.GetAccessibleProjectIdsOrNullAsync(_userContext, cancellationToken);
+        if (accessibleProjects != null && !accessibleProjects.Contains(ticket.ProjectId))
+            return Enumerable.Empty<HandoffDto>();
+
         var handoffs = await _handoffRepository.GetByTicketIdAsync(ticketId, cancellationToken);
         return handoffs.Select(MapToDto);
     }
 
     public async Task<IEnumerable<HandoffDto>> SearchAsync(Guid? ticketId, HandoffType? type, string? search, CancellationToken cancellationToken = default)
     {
+        var accessibleProjects = await _projectMemberService.GetAccessibleProjectIdsOrNullAsync(_userContext, cancellationToken);
         var handoffs = await _handoffRepository.SearchAsync(ticketId, type, search, cancellationToken);
+
+        // Filter to accessible projects
+        if (accessibleProjects != null)
+        {
+            handoffs = handoffs.Where(h => h.Ticket != null && accessibleProjects.Contains(h.Ticket.ProjectId));
+        }
+
         return handoffs.Select(MapToDto);
     }
 

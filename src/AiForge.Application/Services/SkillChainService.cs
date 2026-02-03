@@ -1,4 +1,6 @@
 using AiForge.Application.DTOs.SkillChains;
+using AiForge.Application.Extensions;
+using AiForge.Application.Interfaces;
 using AiForge.Domain.Entities;
 using AiForge.Domain.Enums;
 using AiForge.Domain.Interfaces;
@@ -30,11 +32,19 @@ public class SkillChainService : ISkillChainService
 {
     private readonly AiForgeDbContext _context;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IUserContext _userContext;
+    private readonly IProjectMemberService _projectMemberService;
 
-    public SkillChainService(AiForgeDbContext context, IUnitOfWork unitOfWork)
+    public SkillChainService(
+        AiForgeDbContext context,
+        IUnitOfWork unitOfWork,
+        IUserContext userContext,
+        IProjectMemberService projectMemberService)
     {
         _context = context;
         _unitOfWork = unitOfWork;
+        _userContext = userContext;
+        _projectMemberService = projectMemberService;
     }
 
     public async Task<SkillChainDto> CreateAsync(CreateSkillChainRequest request, string createdBy, CancellationToken ct = default)
@@ -91,7 +101,14 @@ public class SkillChainService : ISkillChainService
                 .ThenInclude(l => l.Agent)
             .FirstOrDefaultAsync(sc => sc.Id == id, ct);
 
-        return chain != null ? MapToDto(chain) : null;
+        if (chain == null) return null;
+
+        // Check project access (org-level chains are visible to all)
+        var accessibleProjects = await _projectMemberService.GetAccessibleProjectIdsOrNullAsync(_userContext, ct);
+        if (accessibleProjects != null && chain.ProjectId.HasValue && !accessibleProjects.Contains(chain.ProjectId.Value))
+            return null;
+
+        return MapToDto(chain);
     }
 
     public async Task<SkillChainDto?> GetByKeyAsync(string chainKey, Guid organizationId, Guid? projectId, CancellationToken ct = default)
@@ -123,7 +140,18 @@ public class SkillChainService : ISkillChainService
 
     public async Task<IEnumerable<SkillChainSummaryDto>> GetChainsAsync(Guid? organizationId, Guid? projectId, bool? publishedOnly, CancellationToken ct = default)
     {
+        var accessibleProjects = await _projectMemberService.GetAccessibleProjectIdsOrNullAsync(_userContext, ct);
+
         IQueryable<SkillChain> query = _context.SkillChains.AsNoTracking();
+
+        // Apply project access filtering
+        if (accessibleProjects != null)
+        {
+            // User can see:
+            // 1. Organization-level chains (ProjectId is null)
+            // 2. Project-level chains for their accessible projects
+            query = query.Where(sc => sc.ProjectId == null || accessibleProjects.Contains(sc.ProjectId.Value));
+        }
 
         if (organizationId.HasValue && projectId.HasValue)
         {

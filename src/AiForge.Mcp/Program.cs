@@ -1,4 +1,5 @@
 using AiForge.Application;
+using AiForge.Application.Interfaces;
 using AiForge.Application.Services;
 using AiForge.Infrastructure;
 using AiForge.Infrastructure.Data;
@@ -25,6 +26,10 @@ builder.Services.AddDbContext<AiForgeDbContext>(options =>
 // Add application layer services
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
+
+// Register ServiceAccountUserContext for MCP server (no HttpContext available)
+// This marks all MCP requests as service account requests, bypassing user-specific access control
+builder.Services.AddSingleton<IUserContext, ServiceAccountUserContext>();
 
 // Add MCP Server with tools
 builder.Services

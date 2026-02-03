@@ -1,4 +1,6 @@
 using AiForge.Application.DTOs.Skill;
+using AiForge.Application.Extensions;
+using AiForge.Application.Interfaces;
 using AiForge.Domain.Entities;
 using AiForge.Domain.Enums;
 using AiForge.Domain.Interfaces;
@@ -24,12 +26,21 @@ public class SkillService : ISkillService
     private readonly AiForgeDbContext _context;
     private readonly IScopeResolver _scopeResolver;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IUserContext _userContext;
+    private readonly IProjectMemberService _projectMemberService;
 
-    public SkillService(AiForgeDbContext context, IScopeResolver scopeResolver, IUnitOfWork unitOfWork)
+    public SkillService(
+        AiForgeDbContext context,
+        IScopeResolver scopeResolver,
+        IUnitOfWork unitOfWork,
+        IUserContext userContext,
+        IProjectMemberService projectMemberService)
     {
         _context = context;
         _scopeResolver = scopeResolver;
         _unitOfWork = unitOfWork;
+        _userContext = userContext;
+        _projectMemberService = projectMemberService;
     }
 
     public async Task<SkillDto> CreateSkillAsync(CreateSkillRequest request, string createdBy, CancellationToken cancellationToken = default)
@@ -81,7 +92,14 @@ public class SkillService : ISkillService
             .AsNoTracking()
             .FirstOrDefaultAsync(s => s.Id == skillId, cancellationToken);
 
-        return skill != null ? MapToDto(skill) : null;
+        if (skill == null) return null;
+
+        // Check project access (org-level skills are visible to all)
+        var accessibleProjects = await _projectMemberService.GetAccessibleProjectIdsOrNullAsync(_userContext, cancellationToken);
+        if (accessibleProjects != null && skill.ProjectId.HasValue && !accessibleProjects.Contains(skill.ProjectId.Value))
+            return null;
+
+        return MapToDto(skill);
     }
 
     public async Task<SkillDto?> GetSkillByKeyAsync(string skillKey, Guid? projectId, Guid organizationId, CancellationToken cancellationToken = default)
@@ -92,9 +110,20 @@ public class SkillService : ISkillService
 
     public async Task<SkillListResponse> GetSkillsAsync(Guid? organizationId, Guid? projectId, string? category, bool? publishedOnly, CancellationToken cancellationToken = default)
     {
+        var accessibleProjects = await _projectMemberService.GetAccessibleProjectIdsOrNullAsync(_userContext, cancellationToken);
+
         IQueryable<Skill> query = _context.Skills
             .Include(s => s.Project)
             .AsNoTracking();
+
+        // Apply project access filtering
+        if (accessibleProjects != null)
+        {
+            // User can see:
+            // 1. Organization-level skills (ProjectId is null)
+            // 2. Project-level skills for their accessible projects
+            query = query.Where(s => s.ProjectId == null || accessibleProjects.Contains(s.ProjectId.Value));
+        }
 
         if (organizationId.HasValue && projectId.HasValue)
         {
