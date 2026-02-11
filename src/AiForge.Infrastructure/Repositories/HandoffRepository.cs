@@ -33,6 +33,7 @@ public class HandoffRepository : Repository<HandoffDocument>, IHandoffRepository
     public async Task<HandoffDocument?> GetByIdWithDetailsAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _dbSet
+            .Include(h => h.Ticket)
             .Include(h => h.FileSnapshots)
             .Include(h => h.Versions)
             .FirstOrDefaultAsync(h => h.Id == id, cancellationToken);
@@ -61,7 +62,7 @@ public class HandoffRepository : Repository<HandoffDocument>, IHandoffRepository
         string? searchText = null,
         CancellationToken cancellationToken = default)
     {
-        var query = _dbSet.AsQueryable();
+        var query = _dbSet.Include(h => h.Ticket).AsQueryable();
 
         if (ticketId.HasValue)
             query = query.Where(h => h.TicketId == ticketId.Value);
